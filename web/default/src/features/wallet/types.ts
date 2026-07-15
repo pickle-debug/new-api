@@ -100,6 +100,12 @@ export interface PaymentMethod {
   min_topup?: number
   /** Optional react-icons component name or safe icon URL */
   icon?: string
+  /** Recipient name displayed in the payment confirmation dialog */
+  recipient_name?: string
+  /** Recipient bank displayed in the payment confirmation dialog */
+  recipient_bank?: string
+  /** Recipient account displayed in the payment confirmation dialog */
+  recipient_account?: string
 }
 
 /**

@@ -72,6 +72,18 @@ function parsePaymentMethods(
         type,
         color: typeof item.color === 'string' ? item.color : undefined,
         icon: typeof item.icon === 'string' ? item.icon : undefined,
+        recipient_name:
+          typeof item.recipient_name === 'string'
+            ? item.recipient_name
+            : undefined,
+        recipient_bank:
+          typeof item.recipient_bank === 'string'
+            ? item.recipient_bank
+            : undefined,
+        recipient_account:
+          typeof item.recipient_account === 'string'
+            ? item.recipient_account
+            : undefined,
         min_topup:
           type === 'stripe' && normalizedMinTopup <= 0
             ? stripeMinTopup

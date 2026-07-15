@@ -65,6 +65,10 @@ export function PaymentConfirmDialog({
   const hasDiscount = discountRate > 0 && discountRate < 1 && paymentAmount > 0
   const originalAmount = hasDiscount ? paymentAmount / discountRate : 0
   const discountAmount = hasDiscount ? originalAmount - paymentAmount : 0
+  const hasRecipientInfo =
+    !!paymentMethod?.recipient_name ||
+    !!paymentMethod?.recipient_bank ||
+    !!paymentMethod?.recipient_account
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -139,6 +143,42 @@ export function PaymentConfirmDialog({
               </div>
             </div>
           </div>
+
+          {hasRecipientInfo && (
+            <div className='bg-muted/50 space-y-2 rounded-lg py-3 text-sm'>
+              <div className='font-medium'>{t('Recipient information')}</div>
+              {paymentMethod?.recipient_name && (
+                <div className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4'>
+                  <span className='text-muted-foreground'>
+                    {t('Recipient name')}
+                  </span>
+                  <span className='justify-self-end text-right'>
+                    {paymentMethod.recipient_name}
+                  </span>
+                </div>
+              )}
+              {paymentMethod?.recipient_bank && (
+                <div className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4'>
+                  <span className='text-muted-foreground'>
+                    {t('Recipient bank')}
+                  </span>
+                  <span className='justify-self-end text-right'>
+                    {paymentMethod.recipient_bank}
+                  </span>
+                </div>
+              )}
+              {paymentMethod?.recipient_account && (
+                <div className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4'>
+                  <span className='text-muted-foreground'>
+                    {t('Recipient account')}
+                  </span>
+                  <span className='justify-self-end text-right font-mono'>
+                    {paymentMethod.recipient_account}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <AlertDialogFooter className='grid grid-cols-2 gap-2 sm:flex'>

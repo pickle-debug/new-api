@@ -43,6 +43,9 @@ const createPaymentMethodDialogSchema = (t: (key: string) => string) =>
     type: z.string().min(1, t('Payment type key is required')),
     icon: z.string().optional(),
     min_topup: z.string().optional(),
+    recipient_name: z.string().optional(),
+    recipient_bank: z.string().optional(),
+    recipient_account: z.string().optional(),
   })
 
 type PaymentMethodDialogFormValues = z.infer<
@@ -57,6 +60,9 @@ export type PaymentMethodData = {
   icon?: string
   min_topup?: string
   color?: string
+  recipient_name?: string
+  recipient_bank?: string
+  recipient_account?: string
 }
 
 type PaymentMethodDialogProps = {
@@ -120,6 +126,9 @@ export function PaymentMethodDialog({
       type: '',
       icon: '',
       min_topup: '',
+      recipient_name: '',
+      recipient_bank: '',
+      recipient_account: '',
     },
   })
 
@@ -132,6 +141,9 @@ export function PaymentMethodDialog({
         type: editData.type,
         icon: editData.icon ?? getDefaultIconName(editData.type),
         min_topup: editData.min_topup ?? '',
+        recipient_name: editData.recipient_name ?? '',
+        recipient_bank: editData.recipient_bank ?? '',
+        recipient_account: editData.recipient_account ?? '',
       })
     } else {
       form.reset({
@@ -139,6 +151,9 @@ export function PaymentMethodDialog({
         type: '',
         icon: '',
         min_topup: '',
+        recipient_name: '',
+        recipient_bank: '',
+        recipient_account: '',
       })
     }
   }, [editData, form, open])
@@ -153,6 +168,15 @@ export function PaymentMethodDialog({
     }
     if (values.min_topup && values.min_topup.trim() !== '') {
       data.min_topup = values.min_topup
+    }
+    if (values.recipient_name && values.recipient_name.trim() !== '') {
+      data.recipient_name = values.recipient_name.trim()
+    }
+    if (values.recipient_bank && values.recipient_bank.trim() !== '') {
+      data.recipient_bank = values.recipient_bank.trim()
+    }
+    if (values.recipient_account && values.recipient_account.trim() !== '') {
+      data.recipient_account = values.recipient_account.trim()
     }
     onSave(data)
     form.reset()
@@ -310,6 +334,65 @@ export function PaymentMethodDialog({
               </FormItem>
             )}
           />
+
+          <div className='space-y-4 border-t pt-4'>
+            <div>
+              <FormLabel>{t('Recipient information')}</FormLabel>
+              <FormDescription>
+                {t(
+                  'Optional bank details shown below the payment details when this method is selected.'
+                )}
+              </FormDescription>
+            </div>
+            <FormField
+              control={form.control}
+              name='recipient_name'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Recipient name')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('e.g., Example Company Ltd.')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='recipient_bank'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Recipient bank')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('e.g., Example Bank (Main Branch)')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='recipient_account'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Recipient account')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('e.g., 1234 5678 9012 3456')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </form>
       </Form>
     </Dialog>

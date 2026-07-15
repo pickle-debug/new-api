@@ -129,7 +129,13 @@ export function PaymentMethodsVisualEditor({
         typeof item.type === 'string' &&
         (!('icon' in item) || typeof item.icon === 'string') &&
         (!('min_topup' in item) || typeof item.min_topup === 'string') &&
-        (!('color' in item) || typeof item.color === 'string')
+        (!('color' in item) || typeof item.color === 'string') &&
+        (!('recipient_name' in item) ||
+          typeof item.recipient_name === 'string') &&
+        (!('recipient_bank' in item) ||
+          typeof item.recipient_bank === 'string') &&
+        (!('recipient_account' in item) ||
+          typeof item.recipient_account === 'string')
     )
   }, [value])
 
@@ -387,6 +393,9 @@ export function PaymentMethodsVisualEditor({
                 method.icon,
                 method.min_topup,
                 method.color,
+                method.recipient_name,
+                method.recipient_bank,
+                method.recipient_account,
               ]
                 .filter(Boolean)
                 .join('-')
@@ -453,6 +462,14 @@ export function PaymentMethodsVisualEditor({
                           {t('Min Top-up:')}
                         </span>
                         <span className='font-mono'>{method.min_topup}</span>
+                      </div>
+                    )}
+                    {method.recipient_account && (
+                      <div className='flex items-center gap-2'>
+                        <span className='text-muted-foreground min-w-20'>
+                          {t('Recipient account')}
+                        </span>
+                        <span className='font-mono'>{method.recipient_account}</span>
                       </div>
                     )}
                   </div>
