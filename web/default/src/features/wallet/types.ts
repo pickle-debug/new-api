@@ -106,6 +106,12 @@ export interface PaymentMethod {
   recipient_bank?: string
   /** Recipient account displayed in the payment confirmation dialog */
   recipient_account?: string
+  /** Editable instructions shown for offline corporate transfers */
+  payment_instructions?: string
+  /** Optional support phone displayed for corporate transfers */
+  contact_phone?: string
+  /** Optional support WeChat ID displayed for corporate transfers */
+  contact_wechat?: string
 }
 
 /**
@@ -253,7 +259,12 @@ export interface UserWalletData {
 /**
  * Topup record status
  */
-export type TopupStatus = 'success' | 'pending' | 'expired'
+export type TopupStatus =
+  | 'success'
+  | 'pending'
+  | 'expired'
+  | 'failed'
+  | 'canceled'
 
 /**
  * Topup billing record
@@ -277,6 +288,13 @@ export interface TopupRecord {
   complete_time?: number
   /** Payment status */
   status: TopupStatus
+  transfer_bank_name?: string
+  transfer_bank_account?: string
+  transfer_payer_name?: string
+  transfer_date?: string
+  transfer_phone?: string
+  proof_original_name?: string
+  reject_reason?: string
 }
 
 /**
@@ -292,4 +310,23 @@ export interface BillingHistoryResponse {
  */
 export interface CompleteOrderRequest {
   trade_no: string
+}
+
+export interface RejectOrderRequest {
+  trade_no: string
+  reason: string
+}
+
+export interface CancelOrderRequest {
+  trade_no: string
+}
+
+export interface CorporateTopupSubmission {
+  amount: number
+  bankName: string
+  bankAccount: string
+  payerName: string
+  transferDate: string
+  phone: string
+  proof: File
 }

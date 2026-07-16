@@ -16,7 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Search, Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  Search,
+  Copy,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  FileSearch,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -44,10 +51,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatCurrencyFromUSD } from '@/lib/currency'
 import { formatNumber } from '@/lib/format'
 
+import { getCorporateTopUpProof } from '../../api'
 import { useBillingHistory } from '../../hooks/use-billing-history'
 import {
   getStatusConfig,
@@ -55,14 +64,24 @@ import {
   formatTimestamp,
 } from '../../lib/billing'
 
+const BILLING_HISTORY_SKELETON_KEYS = [
+  'first',
+  'second',
+  'third',
+  'fourth',
+  'fifth',
+]
+
 interface BillingHistoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onOrderCompleted?: () => void | Promise<void>
 }
 
 export function BillingHistoryDialog({
   open,
   onOpenChange,
+  onOrderCompleted,
 }: BillingHistoryDialogProps) {
   const { t } = useTranslation()
   const {
@@ -73,24 +92,114 @@ export function BillingHistoryDialog({
     keyword,
     loading,
     completing,
+    rejecting,
+    canceling,
     isAdmin,
     handlePageChange,
     handlePageSizeChange,
     handleSearch,
     handleCompleteOrder,
+    handleRejectOrder,
+    handleCancelOrder,
   } = useBillingHistory()
 
   const [confirmTradeNo, setConfirmTradeNo] = useState<string | null>(null)
+  const [rejectTradeNo, setRejectTradeNo] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [cancelTradeNo, setCancelTradeNo] = useState<string | null>(null)
+  const [viewingProofTradeNo, setViewingProofTradeNo] = useState<string | null>(
+    null
+  )
   const { copyToClipboard, copiedText } = useCopyToClipboard({ notify: false })
 
   const totalPages = Math.ceil(total / pageSize)
+  let recordsContent = null
+
+  if (loading) {
+    recordsContent = (
+      <div className='space-y-3'>
+        {BILLING_HISTORY_SKELETON_KEYS.map((key) => (
+          <div key={key} className='rounded-lg border p-3 sm:p-4'>
+            <div className='flex items-start justify-between'>
+              <div className='flex-1 space-y-2'>
+                <Skeleton className='h-4 w-48' />
+                <Skeleton className='h-3 w-32' />
+              </div>
+              <Skeleton className='h-5 w-16' />
+            </div>
+            <div className='mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4'>
+              <Skeleton className='h-3 w-full' />
+              <Skeleton className='h-3 w-full' />
+              <Skeleton className='h-3 w-full' />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  } else if (records.length === 0) {
+    recordsContent = (
+      <div className='text-muted-foreground flex min-h-40 flex-col items-center justify-center py-10 text-center'>
+        <p className='text-sm font-medium'>{t('No billing records found')}</p>
+        <p className='mt-1 text-xs'>
+          {keyword
+            ? t('Try adjusting your search')
+            : t('Your transaction history will appear here')}
+        </p>
+      </div>
+    )
+  }
 
   const handleConfirmComplete = async () => {
     if (confirmTradeNo) {
       const success = await handleCompleteOrder(confirmTradeNo)
       if (success) {
         setConfirmTradeNo(null)
+        await onOrderCompleted?.()
       }
+    }
+  }
+
+  const handleConfirmReject = async () => {
+    if (!rejectTradeNo) return
+    const success = await handleRejectOrder(rejectTradeNo, rejectReason)
+    if (success) {
+      setRejectTradeNo(null)
+      setRejectReason('')
+    }
+  }
+
+  const handleConfirmCancel = async () => {
+    if (!cancelTradeNo) return
+    const success = await handleCancelOrder(cancelTradeNo)
+    if (success) setCancelTradeNo(null)
+  }
+
+  const handleViewProof = async (tradeNo: string) => {
+    const proofWindow = window.open('', '_blank')
+    if (proofWindow) {
+      proofWindow.opener = null
+    }
+
+    setViewingProofTradeNo(tradeNo)
+    try {
+      const proof = await getCorporateTopUpProof(tradeNo)
+      const proofUrl = URL.createObjectURL(proof)
+
+      if (proofWindow) {
+        proofWindow.location.href = proofUrl
+      } else {
+        const link = document.createElement('a')
+        link.href = proofUrl
+        link.target = '_blank'
+        link.rel = 'noreferrer'
+        link.click()
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(proofUrl), 60_000)
+    } catch {
+      proofWindow?.close()
+    } finally {
+      setViewingProofTradeNo(null)
     }
   }
 
@@ -128,7 +237,7 @@ export function BillingHistoryDialog({
               ]}
               value={pageSize.toString()}
               onValueChange={(value) =>
-                value !== null && handlePageSizeChange(parseInt(value))
+                value !== null && handlePageSizeChange(Number.parseInt(value))
               }
             >
               <SelectTrigger className='h-9 w-[92px] sm:w-32'>
@@ -147,37 +256,7 @@ export function BillingHistoryDialog({
 
           {/* Records List */}
           <div className='max-h-[min(54vh,520px)] overflow-y-auto pr-1'>
-            {loading ? (
-              <div className='space-y-3'>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className='rounded-lg border p-3 sm:p-4'>
-                    <div className='flex items-start justify-between'>
-                      <div className='flex-1 space-y-2'>
-                        <Skeleton className='h-4 w-48' />
-                        <Skeleton className='h-3 w-32' />
-                      </div>
-                      <Skeleton className='h-5 w-16' />
-                    </div>
-                    <div className='mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4'>
-                      <Skeleton className='h-3 w-full' />
-                      <Skeleton className='h-3 w-full' />
-                      <Skeleton className='h-3 w-full' />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : records.length === 0 ? (
-              <div className='text-muted-foreground flex min-h-40 flex-col items-center justify-center py-10 text-center'>
-                <p className='text-sm font-medium'>
-                  {t('No billing records found')}
-                </p>
-                <p className='mt-1 text-xs'>
-                  {keyword
-                    ? t('Try adjusting your search')
-                    : t('Your transaction history will appear here')}
-                </p>
-              </div>
-            ) : (
+            {recordsContent || (
               <div className='space-y-3'>
                 {records.map((record) => {
                   const statusConfig = getStatusConfig(record.status)
@@ -219,7 +298,7 @@ export function BillingHistoryDialog({
                           </div>
                         </div>
                         <StatusBadge
-                          label={statusConfig.label}
+                          label={t(statusConfig.label)}
                           variant={statusConfig.variant}
                           showDot
                           copyable={false}
@@ -258,17 +337,101 @@ export function BillingHistoryDialog({
                         </div>
                       </div>
 
-                      {/* Admin Actions */}
-                      {isAdmin && record.status === 'pending' && (
-                        <div className='mt-4 flex justify-end'>
-                          <Button
-                            size='sm'
-                            variant='outline'
-                            onClick={() => setConfirmTradeNo(record.trade_no)}
-                            disabled={completing}
-                          >
-                            {t('Complete Order')}
-                          </Button>
+                      {record.payment_method === 'corporate' && (
+                        <div className='bg-muted/40 mt-3 grid gap-2 rounded-lg p-3 text-xs sm:grid-cols-2'>
+                          <div>
+                            <span className='text-muted-foreground'>
+                              {t('Payer name')}:{' '}
+                            </span>
+                            {record.transfer_payer_name || '-'}
+                          </div>
+                          <div>
+                            <span className='text-muted-foreground'>
+                              {t('Remitting bank')}:{' '}
+                            </span>
+                            {record.transfer_bank_name || '-'}
+                          </div>
+                          <div>
+                            <span className='text-muted-foreground'>
+                              {t('Transfer date')}:{' '}
+                            </span>
+                            {record.transfer_date || '-'}
+                          </div>
+                          <div>
+                            <span className='text-muted-foreground'>
+                              {t('Contact phone')}:{' '}
+                            </span>
+                            {record.transfer_phone || '-'}
+                          </div>
+                        </div>
+                      )}
+
+                      {record.reject_reason && (
+                        <div className='border-destructive/20 bg-destructive/5 mt-3 rounded-lg border p-3 text-xs'>
+                          <span className='text-destructive font-medium'>
+                            {t('Rejection reason')}:{' '}
+                          </span>
+                          <span className='whitespace-pre-wrap'>
+                            {record.reject_reason}
+                          </span>
+                        </div>
+                      )}
+
+                      {(record.proof_original_name ||
+                        (isAdmin && record.status === 'pending')) && (
+                        <div className='mt-4 flex justify-end gap-2'>
+                          {record.proof_original_name && (
+                            <Button
+                              size='sm'
+                              variant='outline'
+                              onClick={() => handleViewProof(record.trade_no)}
+                              disabled={viewingProofTradeNo === record.trade_no}
+                            >
+                              <FileSearch className='mr-2 size-4' />
+                              {t('View Proof')}
+                            </Button>
+                          )}
+                          {isAdmin && record.status === 'pending' && (
+                            <>
+                              {record.payment_method === 'corporate' && (
+                                <Button
+                                  size='sm'
+                                  variant='destructive'
+                                  onClick={() => {
+                                    setRejectTradeNo(record.trade_no)
+                                    setRejectReason('')
+                                  }}
+                                  disabled={completing || rejecting}
+                                >
+                                  {t('Reject Order')}
+                                </Button>
+                              )}
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() =>
+                                  setConfirmTradeNo(record.trade_no)
+                                }
+                                disabled={completing || rejecting}
+                              >
+                                {t('Complete Order')}
+                              </Button>
+                            </>
+                          )}
+                          {!isAdmin &&
+                            record.payment_method === 'corporate' &&
+                            record.status === 'pending' && (
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() =>
+                                  setCancelTradeNo(record.trade_no)
+                                }
+                                disabled={canceling}
+                              >
+                                {t('Withdraw Order')}
+                              </Button>
+                            )}
                         </div>
                       )}
                     </div>
@@ -338,6 +501,76 @@ export function BillingHistoryDialog({
               disabled={completing}
             >
               {completing ? t('Processing...') : t('Confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!rejectTradeNo}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !rejecting) {
+            setRejectTradeNo(null)
+            setRejectReason('')
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('Reject Order')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'The rejection reason will be visible to the user. This action does not credit their balance.'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+            placeholder={t('Enter rejection reason')}
+            maxLength={1000}
+            rows={4}
+            disabled={rejecting}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={rejecting}>
+              {t('Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReject}
+              disabled={rejecting || !rejectReason.trim()}
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+            >
+              {rejecting ? t('Processing...') : t('Confirm rejection')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!cancelTradeNo}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !canceling) setCancelTradeNo(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('Withdraw Order')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'Withdraw this pending corporate payment order? The uploaded proof will remain available in the order history.'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={canceling}>
+              {t('Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              disabled={canceling}
+            >
+              {canceling ? t('Processing...') : t('Confirm withdrawal')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

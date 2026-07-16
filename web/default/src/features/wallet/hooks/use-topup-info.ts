@@ -84,6 +84,18 @@ function parsePaymentMethods(
           typeof item.recipient_account === 'string'
             ? item.recipient_account
             : undefined,
+        payment_instructions:
+          typeof item.payment_instructions === 'string'
+            ? item.payment_instructions
+            : undefined,
+        contact_phone:
+          typeof item.contact_phone === 'string'
+            ? item.contact_phone
+            : undefined,
+        contact_wechat:
+          typeof item.contact_wechat === 'string'
+            ? item.contact_wechat
+            : undefined,
         min_topup:
           type === 'stripe' && normalizedMinTopup <= 0
             ? stripeMinTopup

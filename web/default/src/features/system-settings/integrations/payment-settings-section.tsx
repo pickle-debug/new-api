@@ -33,6 +33,7 @@ import {
   AlertTitle,
 } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -141,6 +142,25 @@ const paymentSchema = z.object({
       })
     }
   }),
+  CorporatePaymentEnabled: z.boolean(),
+  CorporatePaymentName: z.string(),
+  CorporatePaymentBank: z.string(),
+  CorporatePaymentAccount: z.string(),
+  CorporatePaymentInstructions: z.string(),
+  CorporatePaymentMinTopUp: z.coerce.number().int().min(1),
+  CorporatePaymentContactPhone: z.string(),
+  CorporatePaymentContactWeChat: z.string(),
+  CorporatePaymentAllowedGroups: z.string().superRefine((value, ctx) => {
+    const error = getJsonError(
+      value,
+      (parsed) =>
+        Array.isArray(parsed) &&
+        parsed.every((item) => typeof item === 'string')
+    )
+    if (error) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: error })
+    }
+  }),
   StripeApiSecret: z.string(),
   StripeWebhookSecret: z.string(),
   StripePriceId: z.string(),
@@ -202,12 +222,35 @@ type PaymentSettingsSectionProps = {
   waffoPancakeProvisionedStoreID?: string
   waffoPancakeProvisionedProductID?: string
   complianceDefaults: PaymentComplianceDefaults
+  groupRatio: string
 }
 
 function parseWaffoPayMethods(value: string): PayMethod[] {
   try {
     const parsed = JSON.parse(value || '[]')
     return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function parseStringArray(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value || '[]')
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
+
+function parseGroupNames(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value || '{}')
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? Object.keys(parsed).sort((a, b) => a.localeCompare(b))
+      : []
   } catch {
     return []
   }
@@ -220,6 +263,7 @@ export function PaymentSettingsSection({
   waffoPancakeProvisionedStoreID,
   waffoPancakeProvisionedProductID,
   complianceDefaults,
+  groupRatio,
 }: PaymentSettingsSectionProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -356,6 +400,9 @@ export function PaymentSettingsSection({
       AmountOptions: formatJsonForEditor(initialFormValues.AmountOptions),
       AmountDiscount: formatJsonForEditor(initialFormValues.AmountDiscount),
       CreemProducts: formatJsonForEditor(initialFormValues.CreemProducts),
+      CorporatePaymentAllowedGroups: JSON.stringify(
+        parseStringArray(initialFormValues.CorporatePaymentAllowedGroups)
+      ),
     },
   })
 
@@ -413,6 +460,9 @@ export function PaymentSettingsSection({
       AmountOptions: formatJsonForEditor(parsedDefaults.AmountOptions),
       AmountDiscount: formatJsonForEditor(parsedDefaults.AmountDiscount),
       CreemProducts: formatJsonForEditor(parsedDefaults.CreemProducts),
+      CorporatePaymentAllowedGroups: JSON.stringify(
+        parseStringArray(parsedDefaults.CorporatePaymentAllowedGroups)
+      ),
     })
   }, [defaultsSignature, form])
 
@@ -427,6 +477,18 @@ export function PaymentSettingsSection({
       PayMethods: values.PayMethods.trim(),
       AmountOptions: values.AmountOptions.trim(),
       AmountDiscount: values.AmountDiscount.trim(),
+      CorporatePaymentEnabled: values.CorporatePaymentEnabled,
+      CorporatePaymentName: values.CorporatePaymentName.trim(),
+      CorporatePaymentBank: values.CorporatePaymentBank.trim(),
+      CorporatePaymentAccount: values.CorporatePaymentAccount.trim(),
+      CorporatePaymentInstructions: values.CorporatePaymentInstructions.trim(),
+      CorporatePaymentMinTopUp: values.CorporatePaymentMinTopUp,
+      CorporatePaymentContactPhone: values.CorporatePaymentContactPhone.trim(),
+      CorporatePaymentContactWeChat:
+        values.CorporatePaymentContactWeChat.trim(),
+      CorporatePaymentAllowedGroups: JSON.stringify(
+        parseStringArray(values.CorporatePaymentAllowedGroups)
+      ),
       StripeApiSecret: values.StripeApiSecret.trim(),
       StripeWebhookSecret: values.StripeWebhookSecret.trim(),
       StripePriceId: values.StripePriceId.trim(),
@@ -471,6 +533,21 @@ export function PaymentSettingsSection({
       PayMethods: initialRef.current.PayMethods.trim(),
       AmountOptions: initialRef.current.AmountOptions.trim(),
       AmountDiscount: initialRef.current.AmountDiscount.trim(),
+      CorporatePaymentEnabled: initialRef.current.CorporatePaymentEnabled,
+      CorporatePaymentName: initialRef.current.CorporatePaymentName.trim(),
+      CorporatePaymentBank: initialRef.current.CorporatePaymentBank.trim(),
+      CorporatePaymentAccount:
+        initialRef.current.CorporatePaymentAccount.trim(),
+      CorporatePaymentInstructions:
+        initialRef.current.CorporatePaymentInstructions.trim(),
+      CorporatePaymentMinTopUp: initialRef.current.CorporatePaymentMinTopUp,
+      CorporatePaymentContactPhone:
+        initialRef.current.CorporatePaymentContactPhone.trim(),
+      CorporatePaymentContactWeChat:
+        initialRef.current.CorporatePaymentContactWeChat.trim(),
+      CorporatePaymentAllowedGroups: JSON.stringify(
+        parseStringArray(initialRef.current.CorporatePaymentAllowedGroups)
+      ),
       StripeApiSecret: initialRef.current.StripeApiSecret.trim(),
       StripeWebhookSecret: initialRef.current.StripeWebhookSecret.trim(),
       StripePriceId: initialRef.current.StripePriceId.trim(),
@@ -562,11 +639,83 @@ export function PaymentSettingsSection({
       })
     }
 
+    if (sanitized.CorporatePaymentEnabled !== initial.CorporatePaymentEnabled) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_enabled',
+        value: sanitized.CorporatePaymentEnabled,
+      })
+    }
+    if (sanitized.CorporatePaymentName !== initial.CorporatePaymentName) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_name',
+        value: sanitized.CorporatePaymentName,
+      })
+    }
+    if (sanitized.CorporatePaymentBank !== initial.CorporatePaymentBank) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_bank',
+        value: sanitized.CorporatePaymentBank,
+      })
+    }
+    if (sanitized.CorporatePaymentAccount !== initial.CorporatePaymentAccount) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_account',
+        value: sanitized.CorporatePaymentAccount,
+      })
+    }
+    if (
+      sanitized.CorporatePaymentInstructions !==
+      initial.CorporatePaymentInstructions
+    ) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_instructions',
+        value: sanitized.CorporatePaymentInstructions,
+      })
+    }
+    if (
+      sanitized.CorporatePaymentMinTopUp !== initial.CorporatePaymentMinTopUp
+    ) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_min_topup',
+        value: sanitized.CorporatePaymentMinTopUp,
+      })
+    }
+    if (
+      sanitized.CorporatePaymentContactPhone !==
+      initial.CorporatePaymentContactPhone
+    ) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_contact_phone',
+        value: sanitized.CorporatePaymentContactPhone,
+      })
+    }
+    if (
+      sanitized.CorporatePaymentContactWeChat !==
+      initial.CorporatePaymentContactWeChat
+    ) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_contact_wechat',
+        value: sanitized.CorporatePaymentContactWeChat,
+      })
+    }
+    if (
+      normalizeJsonForComparison(sanitized.CorporatePaymentAllowedGroups) !==
+      normalizeJsonForComparison(initial.CorporatePaymentAllowedGroups)
+    ) {
+      updates.push({
+        key: 'payment_setting.corporate_payment_allowed_groups',
+        value: sanitized.CorporatePaymentAllowedGroups,
+      })
+    }
+
     if (
       sanitized.StripeApiSecret &&
       sanitized.StripeApiSecret !== initial.StripeApiSecret
     ) {
-      updates.push({ key: 'StripeApiSecret', value: sanitized.StripeApiSecret })
+      updates.push({
+        key: 'StripeApiSecret',
+        value: sanitized.StripeApiSecret,
+      })
     }
 
     if (
@@ -584,7 +733,10 @@ export function PaymentSettingsSection({
     }
 
     if (sanitized.StripeUnitPrice !== initial.StripeUnitPrice) {
-      updates.push({ key: 'StripeUnitPrice', value: sanitized.StripeUnitPrice })
+      updates.push({
+        key: 'StripeUnitPrice',
+        value: sanitized.StripeUnitPrice,
+      })
     }
 
     if (sanitized.StripeMinTopUp !== initial.StripeMinTopUp) {
@@ -638,7 +790,10 @@ export function PaymentSettingsSection({
     }
 
     if (sanitized.WaffoMerchantId !== initial.WaffoMerchantId) {
-      updates.push({ key: 'WaffoMerchantId', value: sanitized.WaffoMerchantId })
+      updates.push({
+        key: 'WaffoMerchantId',
+        value: sanitized.WaffoMerchantId,
+      })
     }
 
     if (sanitized.WaffoCurrency !== initial.WaffoCurrency) {
@@ -662,7 +817,10 @@ export function PaymentSettingsSection({
     }
 
     if (sanitized.WaffoPublicCert !== initial.WaffoPublicCert) {
-      updates.push({ key: 'WaffoPublicCert', value: sanitized.WaffoPublicCert })
+      updates.push({
+        key: 'WaffoPublicCert',
+        value: sanitized.WaffoPublicCert,
+      })
     }
 
     if (sanitized.WaffoSandboxPublicCert !== initial.WaffoSandboxPublicCert) {
@@ -677,7 +835,10 @@ export function PaymentSettingsSection({
     }
 
     if (sanitized.WaffoPrivateKey) {
-      updates.push({ key: 'WaffoPrivateKey', value: sanitized.WaffoPrivateKey })
+      updates.push({
+        key: 'WaffoPrivateKey',
+        value: sanitized.WaffoPrivateKey,
+      })
     }
 
     if (sanitized.WaffoSandboxApiKey) {
@@ -698,7 +859,10 @@ export function PaymentSettingsSection({
       normalizeJsonForComparison(sanitized.WaffoPayMethods) !==
       normalizeJsonForComparison(initial.WaffoPayMethods)
     ) {
-      updates.push({ key: 'WaffoPayMethods', value: sanitized.WaffoPayMethods })
+      updates.push({
+        key: 'WaffoPayMethods',
+        value: sanitized.WaffoPayMethods,
+      })
     }
 
     const hasWaffoPancakeChanges =
@@ -773,6 +937,10 @@ export function PaymentSettingsSection({
   }
 
   const currentFormValues = form.watch()
+  const corporateAllowedGroups = parseStringArray(
+    currentFormValues.CorporatePaymentAllowedGroups
+  )
+  const availableGroups = parseGroupNames(groupRatio)
   const waffoValues: WaffoSettingsValues = {
     WaffoEnabled: currentFormValues.WaffoEnabled,
     WaffoApiKey: currentFormValues.WaffoApiKey,
@@ -877,8 +1045,11 @@ export function PaymentSettingsSection({
           />
           <Tabs defaultValue='general' className='min-w-0'>
             <div className='overflow-x-auto pb-1'>
-              <TabsList className='grid min-w-[44rem] grid-cols-6'>
+              <TabsList className='grid min-w-[50rem] grid-cols-7'>
                 <TabsTrigger value='general'>{t('General')}</TabsTrigger>
+                <TabsTrigger value='corporate'>
+                  {t('Corporate Payment')}
+                </TabsTrigger>
                 <TabsTrigger value='epay'>Epay</TabsTrigger>
                 <TabsTrigger value='stripe'>{t('Stripe')}</TabsTrigger>
                 <TabsTrigger value='creem'>Creem</TabsTrigger>
@@ -1119,6 +1290,219 @@ export function PaymentSettingsSection({
                     )}
                   />
                 </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent
+              value='corporate'
+              className={paymentTabContentClassName}
+            >
+              <div className='space-y-6'>
+                <div>
+                  <h3 className='text-lg font-medium'>
+                    {t('Corporate Payment')}
+                  </h3>
+                  <p className='text-muted-foreground text-sm'>
+                    {t(
+                      'Configure bank transfer details and editable instructions shown to users.'
+                    )}
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name='CorporatePaymentEnabled'
+                  render={({ field }) => (
+                    <SettingsSwitchItem>
+                      <SettingsSwitchContent>
+                        <FormLabel>{t('Enable corporate payment')}</FormLabel>
+                        <FormDescription>
+                          {t(
+                            'Users can submit a bank transfer receipt for manual review.'
+                          )}
+                        </FormDescription>
+                      </SettingsSwitchContent>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </SettingsSwitchItem>
+                  )}
+                />
+
+                <div className='grid gap-6 md:grid-cols-2'>
+                  <FormField
+                    control={form.control}
+                    name='CorporatePaymentName'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Recipient name')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('e.g., Example Company Ltd.')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='CorporatePaymentBank'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Recipient bank')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('e.g., Example Bank (Main Branch)')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='CorporatePaymentAccount'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Recipient account')}</FormLabel>
+                        <FormControl>
+                          <Input placeholder='1234 5678 9012 3456' {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='CorporatePaymentMinTopUp'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Minimum top-up (USD)')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='number'
+                            min={1}
+                            step={1}
+                            {...safeNumberFieldProps(field)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='CorporatePaymentContactPhone'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Corporate contact phone')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('e.g., +86 138 0000 0000')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='CorporatePaymentContactWeChat'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Corporate contact WeChat')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder={t('e.g., finance_support')}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name='CorporatePaymentAllowedGroups'
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>{t('Visible user groups')}</FormLabel>
+                      <FormDescription>
+                        {t(
+                          'Leave all groups unselected to show corporate payment to every user group.'
+                        )}
+                      </FormDescription>
+                      <div className='grid gap-2 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-3'>
+                        {availableGroups.map((group) => {
+                          const checked = corporateAllowedGroups.includes(group)
+                          return (
+                            <label
+                              key={group}
+                              className='hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm'
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(nextChecked) => {
+                                  const nextGroups = nextChecked
+                                    ? [...corporateAllowedGroups, group]
+                                    : corporateAllowedGroups.filter(
+                                        (item) => item !== group
+                                      )
+                                  setPaymentValue(
+                                    'CorporatePaymentAllowedGroups',
+                                    JSON.stringify(nextGroups)
+                                  )
+                                }}
+                                aria-label={group}
+                              />
+                              <span>{group}</span>
+                            </label>
+                          )
+                        })}
+                        {availableGroups.length === 0 && (
+                          <span className='text-muted-foreground text-sm'>
+                            {t('No user groups configured')}
+                          </span>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='CorporatePaymentInstructions'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Payment instructions')}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          rows={5}
+                          placeholder={t(
+                            'Complete the bank transfer, then upload the receipt for review.'
+                          )}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t(
+                          'This text is shown in the corporate payment confirmation dialog and upload page.'
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </TabsContent>
 

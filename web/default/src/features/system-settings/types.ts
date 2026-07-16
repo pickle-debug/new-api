@@ -288,6 +288,15 @@ export type BillingSettings = {
   PayMethods: string
   'payment_setting.amount_options': string
   'payment_setting.amount_discount': string
+  'payment_setting.corporate_payment_enabled': boolean
+  'payment_setting.corporate_payment_name': string
+  'payment_setting.corporate_payment_bank': string
+  'payment_setting.corporate_payment_account': string
+  'payment_setting.corporate_payment_instructions': string
+  'payment_setting.corporate_payment_min_topup': number
+  'payment_setting.corporate_payment_contact_phone': string
+  'payment_setting.corporate_payment_contact_wechat': string
+  'payment_setting.corporate_payment_allowed_groups': string
   'payment_setting.compliance_confirmed': boolean
   'payment_setting.compliance_terms_version': string
   'payment_setting.compliance_confirmed_at': number

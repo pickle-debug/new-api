@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -137,6 +138,63 @@ func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentProvider(t *testing.T)
 			assert.Equal(t, common.TopUpStatusPending, getTopUpStatusForPaymentGuardTest(t, tc.tradeNo))
 		})
 	}
+}
+
+func TestRejectCorporateTopUpStoresReasonWithoutCreditingQuota(t *testing.T) {
+	truncateTables(t)
+	insertUserForPaymentGuardTest(t, 175, 100)
+	insertTopUpForPaymentGuardTest(t, "corporate-reject", 175, PaymentProviderCorporate)
+
+	require.NoError(t, RejectCorporateTopUp("corporate-reject", "  凭证金额与订单不一致  ", "127.0.0.1"))
+
+	topUp := GetTopUpByTradeNo("corporate-reject")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusFailed, topUp.Status)
+	assert.Equal(t, "凭证金额与订单不一致", topUp.RejectReason)
+	assert.NotZero(t, topUp.CompleteTime)
+	assert.Equal(t, 100, getUserQuotaForPaymentGuardTest(t, 175))
+}
+
+func TestRejectCorporateTopUpRequiresPendingCorporateOrderAndReason(t *testing.T) {
+	testCases := []struct {
+		name     string
+		provider string
+		reason   string
+	}{
+		{name: "requires corporate provider", provider: PaymentProviderStripe, reason: "invalid"},
+		{name: "requires reason", provider: PaymentProviderCorporate, reason: "  "},
+	}
+
+	for index, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			truncateTables(t)
+			insertUserForPaymentGuardTest(t, 180+index, 50)
+			tradeNo := fmt.Sprintf("corporate-reject-guard-%d", index)
+			insertTopUpForPaymentGuardTest(t, tradeNo, 180+index, test.provider)
+
+			require.Error(t, RejectCorporateTopUp(tradeNo, test.reason, "127.0.0.1"))
+			assert.Equal(t, common.TopUpStatusPending, getTopUpStatusForPaymentGuardTest(t, tradeNo))
+			assert.Equal(t, 50, getUserQuotaForPaymentGuardTest(t, 180+index))
+		})
+	}
+}
+
+func TestCancelCorporateTopUpOnlyAllowsOwnerPendingCorporateOrder(t *testing.T) {
+	truncateTables(t)
+	insertUserForPaymentGuardTest(t, 190, 75)
+	insertTopUpForPaymentGuardTest(t, "corporate-cancel", 190, PaymentProviderCorporate)
+
+	require.Error(t, CancelCorporateTopUp("corporate-cancel", 191, "127.0.0.1"))
+	assert.Equal(t, common.TopUpStatusPending, getTopUpStatusForPaymentGuardTest(t, "corporate-cancel"))
+
+	require.NoError(t, CancelCorporateTopUp("corporate-cancel", 190, "127.0.0.1"))
+	topUp := GetTopUpByTradeNo("corporate-cancel")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusCanceled, topUp.Status)
+	assert.NotZero(t, topUp.CompleteTime)
+	assert.Equal(t, 75, getUserQuotaForPaymentGuardTest(t, 190))
+
+	require.Error(t, CancelCorporateTopUp("corporate-cancel", 190, "127.0.0.1"))
 }
 
 func TestCompleteSubscriptionOrder_RejectsMismatchedPaymentProvider(t *testing.T) {

@@ -142,6 +142,24 @@ const BILLING_SECTIONS = [
           PayMethods: settings.PayMethods,
           AmountOptions: settings['payment_setting.amount_options'],
           AmountDiscount: settings['payment_setting.amount_discount'],
+          CorporatePaymentEnabled:
+            settings['payment_setting.corporate_payment_enabled'],
+          CorporatePaymentName:
+            settings['payment_setting.corporate_payment_name'],
+          CorporatePaymentBank:
+            settings['payment_setting.corporate_payment_bank'],
+          CorporatePaymentAccount:
+            settings['payment_setting.corporate_payment_account'],
+          CorporatePaymentInstructions:
+            settings['payment_setting.corporate_payment_instructions'],
+          CorporatePaymentMinTopUp:
+            settings['payment_setting.corporate_payment_min_topup'],
+          CorporatePaymentContactPhone:
+            settings['payment_setting.corporate_payment_contact_phone'],
+          CorporatePaymentContactWeChat:
+            settings['payment_setting.corporate_payment_contact_wechat'],
+          CorporatePaymentAllowedGroups:
+            settings['payment_setting.corporate_payment_allowed_groups'],
           StripeApiSecret: settings.StripeApiSecret,
           StripeWebhookSecret: settings.StripeWebhookSecret,
           StripePriceId: settings.StripePriceId,
@@ -153,6 +171,7 @@ const BILLING_SECTIONS = [
           CreemTestMode: settings.CreemTestMode,
           CreemProducts: settings.CreemProducts,
         }}
+        groupRatio={settings.GroupRatio}
         waffoDefaultValues={{
           WaffoEnabled: settings.WaffoEnabled ?? false,
           WaffoApiKey: settings.WaffoApiKey ?? '',

@@ -33,12 +33,15 @@ import type {
   AffiliateTransferResponse,
   BillingHistoryResponse,
   CompleteOrderRequest,
+  RejectOrderRequest,
+  CancelOrderRequest,
   CreemPaymentRequest,
   CreemPaymentResponse,
   WaffoPaymentRequest,
   WaffoPaymentResponse,
   WaffoPancakePaymentRequest,
   WaffoPancakePaymentResponse,
+  CorporateTopupSubmission,
 } from './types'
 
 // ============================================================================
@@ -169,6 +172,24 @@ export async function requestWaffoPancakePayment(
   return res.data
 }
 
+export async function submitCorporateTopup(
+  submission: CorporateTopupSubmission
+): Promise<ApiResponse<{ trade_no: string }>> {
+  const formData = new FormData()
+  formData.append('amount', String(Math.floor(submission.amount)))
+  formData.append('bank_name', submission.bankName)
+  formData.append('bank_account', submission.bankAccount)
+  formData.append('payer_name', submission.payerName)
+  formData.append('transfer_date', submission.transferDate)
+  formData.append('phone', submission.phone)
+  formData.append('proof', submission.proof)
+
+  const res = await api.post('/api/user/corporate/pay', formData, {
+    skipBusinessError: true,
+  })
+  return res.data
+}
+
 /**
  * Get affiliate code
  */
@@ -226,11 +247,45 @@ export async function getAllBillingHistory(
 }
 
 /**
+ * Fetch a corporate payment proof after backend ownership/admin validation.
+ */
+export async function getCorporateTopUpProof(tradeNo: string): Promise<Blob> {
+  const res = await api.get(
+    `/api/user/topup/${encodeURIComponent(tradeNo)}/proof`,
+    {
+      responseType: 'blob',
+      disableDuplicate: true,
+    }
+  )
+  return res.data
+}
+
+/**
  * Complete a pending order (admin only)
  */
 export async function completeOrder(
   request: CompleteOrderRequest
 ): Promise<ApiResponse> {
   const res = await api.post('/api/user/topup/complete', request)
+  return res.data
+}
+
+/**
+ * Reject a pending corporate order (admin only)
+ */
+export async function rejectOrder(
+  request: RejectOrderRequest
+): Promise<ApiResponse> {
+  const res = await api.post('/api/user/topup/reject', request)
+  return res.data
+}
+
+/**
+ * Withdraw an owned pending corporate order.
+ */
+export async function cancelOrder(
+  request: CancelOrderRequest
+): Promise<ApiResponse> {
+  const res = await api.post('/api/user/topup/cancel', request)
   return res.data
 }

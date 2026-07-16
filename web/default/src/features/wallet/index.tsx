@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -23,6 +24,7 @@ import { SectionPageLayout } from '@/components/layout'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
@@ -46,6 +48,7 @@ import {
   getDefaultPaymentType,
   getMinTopupAmount,
   isWaffoPancakePayment,
+  isCorporatePayment,
 } from './lib'
 import type {
   UserWalletData,
@@ -60,6 +63,8 @@ interface WalletProps {
 
 export function Wallet(props: WalletProps) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const setAuthUser = useAuthStore((state) => state.auth.setUser)
   const [user, setUser] = useState<UserWalletData | null>(null)
   const [userLoading, setUserLoading] = useState(true)
   const [topupAmount, setTopupAmount] = useState(0)
@@ -112,6 +117,7 @@ export function Wallet(props: WalletProps) {
       const response = await getSelf()
       if (response.success && response.data) {
         setUser(response.data as UserWalletData)
+        setAuthUser(response.data)
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -119,7 +125,7 @@ export function Wallet(props: WalletProps) {
     } finally {
       setUserLoading(false)
     }
-  }, [])
+  }, [setAuthUser])
 
   useEffect(() => {
     fetchUser()
@@ -186,6 +192,15 @@ export function Wallet(props: WalletProps) {
   // Handle payment confirmation
   const handlePaymentConfirm = async () => {
     if (!selectedPaymentMethod) return
+
+    if (isCorporatePayment(selectedPaymentMethod.type)) {
+      setConfirmDialogOpen(false)
+      await navigate({
+        to: '/wallet/corporate-proof',
+        search: { amount: Math.floor(topupAmount) },
+      })
+      return
+    }
 
     const isPancake = isWaffoPancakePayment(selectedPaymentMethod.type)
     const success = isPancake
@@ -340,6 +355,7 @@ export function Wallet(props: WalletProps) {
         processing={processing || pancakeProcessing}
         discountRate={getDiscountRate()}
         usdExchangeRate={effectiveUsdExchangeRate}
+        currentBalance={user?.quota ?? 0}
       />
 
       <TransferDialog
@@ -353,6 +369,7 @@ export function Wallet(props: WalletProps) {
       <BillingHistoryDialog
         open={billingDialogOpen}
         onOpenChange={setBillingDialogOpen}
+        onOrderCompleted={fetchUser}
       />
 
       <CreemConfirmDialog

@@ -26,6 +26,8 @@ import {
   getUserBillingHistory,
   getAllBillingHistory,
   completeOrder,
+  rejectOrder,
+  cancelOrder,
   isApiSuccess,
 } from '../api'
 import type { TopupRecord } from '../types'
@@ -52,6 +54,8 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [completing, setCompleting] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [canceling, setCanceling] = useState(false)
 
   /**
    * Fetch billing history
@@ -118,6 +122,68 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
     [isAdmin, fetchBillingHistory]
   )
 
+  const handleRejectOrder = useCallback(
+    async (tradeNo: string, reason: string) => {
+      if (!isAdmin) {
+        toast.error(i18next.t('Admin access required'))
+        return false
+      }
+
+      const normalizedReason = reason.trim()
+      if (!normalizedReason) {
+        toast.error(i18next.t('Please provide a rejection reason'))
+        return false
+      }
+
+      setRejecting(true)
+      try {
+        const response = await rejectOrder({
+          trade_no: tradeNo,
+          reason: normalizedReason,
+        })
+        if (isApiSuccess(response)) {
+          toast.success(i18next.t('Order rejected successfully'))
+          await fetchBillingHistory()
+          return true
+        }
+        toast.error(response.message || i18next.t('Failed to reject order'))
+        return false
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to reject order:', error)
+        toast.error(i18next.t('Failed to reject order'))
+        return false
+      } finally {
+        setRejecting(false)
+      }
+    },
+    [isAdmin, fetchBillingHistory]
+  )
+
+  const handleCancelOrder = useCallback(
+    async (tradeNo: string) => {
+      setCanceling(true)
+      try {
+        const response = await cancelOrder({ trade_no: tradeNo })
+        if (isApiSuccess(response)) {
+          toast.success(i18next.t('Order withdrawn successfully'))
+          await fetchBillingHistory()
+          return true
+        }
+        toast.error(response.message || i18next.t('Failed to withdraw order'))
+        return false
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to withdraw order:', error)
+        toast.error(i18next.t('Failed to withdraw order'))
+        return false
+      } finally {
+        setCanceling(false)
+      }
+    },
+    [fetchBillingHistory]
+  )
+
   /**
    * Change page
    */
@@ -154,11 +220,15 @@ export function useBillingHistory(options: UseBillingHistoryOptions = {}) {
     keyword,
     loading,
     completing,
+    rejecting,
+    canceling,
     isAdmin,
     handlePageChange,
     handlePageSizeChange,
     handleSearch,
     handleCompleteOrder,
+    handleRejectOrder,
+    handleCancelOrder,
     refresh: fetchBillingHistory,
   }
 }

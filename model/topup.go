@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -12,16 +13,26 @@ import (
 )
 
 type TopUp struct {
-	Id              int     `json:"id"`
-	UserId          int     `json:"user_id" gorm:"index"`
-	Amount          int64   `json:"amount"`
-	Money           float64 `json:"money"`
-	TradeNo         string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
-	PaymentMethod   string  `json:"payment_method" gorm:"type:varchar(50)"`
-	PaymentProvider string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
-	CreateTime      int64   `json:"create_time"`
-	CompleteTime    int64   `json:"complete_time"`
-	Status          string  `json:"status"`
+	Id                  int     `json:"id"`
+	UserId              int     `json:"user_id" gorm:"index"`
+	Amount              int64   `json:"amount"`
+	Money               float64 `json:"money"`
+	TradeNo             string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
+	PaymentMethod       string  `json:"payment_method" gorm:"type:varchar(50)"`
+	PaymentProvider     string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	CreateTime          int64   `json:"create_time"`
+	CompleteTime        int64   `json:"complete_time"`
+	Status              string  `json:"status"`
+	RejectReason        string  `json:"reject_reason,omitempty" gorm:"type:varchar(1000)"`
+	TransferBankName    string  `json:"transfer_bank_name,omitempty" gorm:"type:varchar(255)"`
+	TransferBankAccount string  `json:"transfer_bank_account,omitempty" gorm:"type:varchar(255)"`
+	TransferPayerName   string  `json:"transfer_payer_name,omitempty" gorm:"type:varchar(255)"`
+	TransferDate        string  `json:"transfer_date,omitempty" gorm:"type:varchar(20)"`
+	TransferPhone       string  `json:"transfer_phone,omitempty" gorm:"type:varchar(50)"`
+	ProofOriginalName   string  `json:"proof_original_name,omitempty" gorm:"type:varchar(255)"`
+	ProofStorageName    string  `json:"-" gorm:"type:varchar(255)"`
+	ProofURL            string  `json:"-" gorm:"type:varchar(2048)"`
+	ProofMimeType       string  `json:"-" gorm:"type:varchar(100)"`
 }
 
 const (
@@ -30,6 +41,7 @@ const (
 	PaymentMethodWaffo        = "waffo"
 	PaymentMethodWaffoPancake = "waffo_pancake"
 	PaymentMethodBalance      = "balance"
+	PaymentMethodCorporate    = "corporate"
 )
 
 const (
@@ -39,6 +51,7 @@ const (
 	PaymentProviderWaffo        = "waffo"
 	PaymentProviderWaffoPancake = "waffo_pancake"
 	PaymentProviderBalance      = "balance"
+	PaymentProviderCorporate    = "corporate"
 )
 
 var (
@@ -331,6 +344,7 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 	var quotaToAdd int
 	var payMoney float64
 	var paymentMethod string
+	var alreadyCompleted bool
 
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		topUp := &TopUp{}
@@ -341,6 +355,7 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 
 		// 幂等处理：已成功直接返回
 		if topUp.Status == common.TopUpStatusSuccess {
+			alreadyCompleted = true
 			return nil
 		}
 
@@ -353,11 +368,19 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 		// - 其他订单（如易支付）：Amount 为美元数量，* QuotaPerUnit
 		if topUp.PaymentProvider == PaymentProviderStripe {
 			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd = int(decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit).IntPart())
+			var clamp *common.QuotaClamp
+			quotaToAdd, clamp = common.QuotaFromDecimalChecked(decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit))
+			if clamp != nil {
+				return errors.New("充值额度超出允许范围")
+			}
 		} else {
 			dAmount := decimal.NewFromInt(topUp.Amount)
 			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
+			var clamp *common.QuotaClamp
+			quotaToAdd, clamp = common.QuotaFromDecimalChecked(dAmount.Mul(dQuotaPerUnit))
+			if clamp != nil {
+				return errors.New("充值额度超出允许范围")
+			}
 		}
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
@@ -384,9 +407,110 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 	if err != nil {
 		return err
 	}
+	if alreadyCompleted {
+		return nil
+	}
+	if err := InvalidateUserCache(userId); err != nil {
+		common.SysLog("failed to invalidate user cache after manual topup: " + err.Error())
+	}
 
 	// 事务外记录日志，避免阻塞
 	RecordTopupLog(userId, fmt.Sprintf("管理员补单成功，充值金额: %v，支付金额：%f", logger.FormatQuota(quotaToAdd), payMoney), callerIp, paymentMethod, "admin")
+	return nil
+}
+
+// RejectCorporateTopUp rejects a pending corporate order without changing quota.
+func RejectCorporateTopUp(tradeNo string, reason string, callerIp string) error {
+	tradeNo = strings.TrimSpace(tradeNo)
+	reason = strings.TrimSpace(reason)
+	if tradeNo == "" {
+		return errors.New("未提供订单号")
+	}
+	if reason == "" {
+		return errors.New("请填写拒绝原因")
+	}
+	if len([]rune(reason)) > 1000 {
+		return errors.New("拒绝原因不能超过 1000 个字符")
+	}
+
+	refCol := "`trade_no`"
+	if common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
+		refCol = `"trade_no"`
+	}
+
+	var userID int
+	var paymentMethod string
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		topUp := &TopUp{}
+		if err := lockForUpdate(tx).Where(refCol+" = ?", tradeNo).First(topUp).Error; err != nil {
+			return errors.New("充值订单不存在")
+		}
+		if topUp.PaymentProvider != PaymentProviderCorporate {
+			return errors.New("仅支持拒绝对公支付订单")
+		}
+		if topUp.Status != common.TopUpStatusPending {
+			return errors.New("订单状态不是待确认，无法拒绝")
+		}
+
+		topUp.Status = common.TopUpStatusFailed
+		topUp.CompleteTime = common.GetTimestamp()
+		topUp.RejectReason = reason
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+		userID = topUp.UserId
+		paymentMethod = topUp.PaymentMethod
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	RecordTopupLog(userID, fmt.Sprintf("管理员拒绝对公支付订单，原因：%s", reason), callerIp, paymentMethod, "admin")
+	return nil
+}
+
+// CancelCorporateTopUp lets an owner withdraw their own pending corporate order.
+func CancelCorporateTopUp(tradeNo string, userID int, callerIp string) error {
+	tradeNo = strings.TrimSpace(tradeNo)
+	if tradeNo == "" || userID <= 0 {
+		return errors.New("未提供有效订单")
+	}
+
+	refCol := "`trade_no`"
+	if common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
+		refCol = `"trade_no"`
+	}
+
+	var paymentMethod string
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		topUp := &TopUp{}
+		if err := lockForUpdate(tx).Where(refCol+" = ?", tradeNo).First(topUp).Error; err != nil {
+			return errors.New("充值订单不存在")
+		}
+		if topUp.UserId != userID {
+			return errors.New("无权撤回此订单")
+		}
+		if topUp.PaymentProvider != PaymentProviderCorporate {
+			return errors.New("仅支持撤回对公支付订单")
+		}
+		if topUp.Status != common.TopUpStatusPending {
+			return errors.New("订单状态不是待确认，无法撤回")
+		}
+
+		topUp.Status = common.TopUpStatusCanceled
+		topUp.CompleteTime = common.GetTimestamp()
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+		paymentMethod = topUp.PaymentMethod
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	RecordTopupLog(userID, "用户撤回对公支付订单", callerIp, paymentMethod, "user")
 	return nil
 }
 func RechargeCreem(referenceId string, customerEmail string, customerName string, callerIp string) (err error) {

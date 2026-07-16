@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,9 +26,29 @@ func GetTopUpInfo(c *gin.Context) {
 	complianceConfirmed := operation_setting.IsPaymentComplianceConfirmed()
 
 	// 获取支付方式
-	payMethods := operation_setting.PayMethods
+	payMethods := append([]map[string]string(nil), operation_setting.PayMethods...)
 	if !complianceConfirmed {
 		payMethods = []map[string]string{}
+	}
+	corporateSetting := operation_setting.GetPaymentSetting()
+	userGroup, groupErr := model.GetUserGroup(c.GetInt("id"), false)
+	if complianceConfirmed && corporateSetting.CorporatePaymentEnabled &&
+		corporateSetting.CorporatePaymentName != "" &&
+		corporateSetting.CorporatePaymentBank != "" &&
+		corporateSetting.CorporatePaymentAccount != "" && groupErr == nil &&
+		operation_setting.IsCorporatePaymentGroupAllowed(userGroup) {
+		payMethods = append(payMethods, map[string]string{
+			"name":                 "Corporate Payment",
+			"type":                 model.PaymentMethodCorporate,
+			"icon":                 "LuLandmark",
+			"min_topup":            strconv.Itoa(corporateSetting.CorporatePaymentMinTopUp),
+			"recipient_name":       corporateSetting.CorporatePaymentName,
+			"recipient_bank":       corporateSetting.CorporatePaymentBank,
+			"recipient_account":    corporateSetting.CorporatePaymentAccount,
+			"payment_instructions": corporateSetting.CorporatePaymentInstructions,
+			"contact_phone":        corporateSetting.CorporatePaymentContactPhone,
+			"contact_wechat":       corporateSetting.CorporatePaymentContactWeChat,
+		})
 	}
 
 	// 如果启用了 Stripe 支付，添加到支付方法列表
@@ -491,6 +512,15 @@ type AdminCompleteTopupRequest struct {
 	TradeNo string `json:"trade_no"`
 }
 
+type AdminRejectTopupRequest struct {
+	TradeNo string `json:"trade_no"`
+	Reason  string `json:"reason"`
+}
+
+type CancelTopupRequest struct {
+	TradeNo string `json:"trade_no"`
+}
+
 // AdminCompleteTopUp 管理员补单接口
 func AdminCompleteTopUp(c *gin.Context) {
 	var req AdminCompleteTopupRequest
@@ -504,6 +534,42 @@ func AdminCompleteTopUp(c *gin.Context) {
 	defer UnlockOrder(req.TradeNo)
 
 	if err := model.ManualCompleteTopUp(req.TradeNo, c.ClientIP()); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, nil)
+}
+
+// AdminRejectTopUp rejects a pending corporate payment order.
+func AdminRejectTopUp(c *gin.Context) {
+	var req AdminRejectTopupRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.TradeNo) == "" || strings.TrimSpace(req.Reason) == "" {
+		common.ApiErrorMsg(c, "请填写订单号和拒绝原因")
+		return
+	}
+
+	LockOrder(req.TradeNo)
+	defer UnlockOrder(req.TradeNo)
+
+	if err := model.RejectCorporateTopUp(req.TradeNo, req.Reason, c.ClientIP()); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, nil)
+}
+
+// CancelCorporateTopUp lets a user withdraw their own pending corporate order.
+func CancelCorporateTopUp(c *gin.Context) {
+	var req CancelTopupRequest
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.TradeNo) == "" {
+		common.ApiErrorMsg(c, "请填写订单号")
+		return
+	}
+
+	LockOrder(req.TradeNo)
+	defer UnlockOrder(req.TradeNo)
+
+	if err := model.CancelCorporateTopUp(req.TradeNo, c.GetInt("id"), c.ClientIP()); err != nil {
 		common.ApiError(c, err)
 		return
 	}

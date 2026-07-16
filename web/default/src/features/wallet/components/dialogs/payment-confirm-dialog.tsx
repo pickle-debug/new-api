@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { CopyButton } from '@/components/copy-button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatLocalCurrencyAmount } from '@/lib/currency'
+import { formatQuota } from '@/lib/format'
 
 import { DEFAULT_DISCOUNT_RATE } from '../../constants'
 import { formatCurrency, getPaymentIcon } from '../../lib'
@@ -47,6 +49,7 @@ interface PaymentConfirmDialogProps {
   processing: boolean
   discountRate?: number
   usdExchangeRate?: number
+  currentBalance?: number
 }
 
 export function PaymentConfirmDialog({
@@ -60,6 +63,7 @@ export function PaymentConfirmDialog({
   processing,
   discountRate = DEFAULT_DISCOUNT_RATE,
   usdExchangeRate = 1,
+  currentBalance = 0,
 }: PaymentConfirmDialogProps) {
   const { t } = useTranslation()
   const hasDiscount = discountRate > 0 && discountRate < 1 && paymentAmount > 0
@@ -68,26 +72,45 @@ export function PaymentConfirmDialog({
   const hasRecipientInfo =
     !!paymentMethod?.recipient_name ||
     !!paymentMethod?.recipient_bank ||
-    !!paymentMethod?.recipient_account
+    !!paymentMethod?.recipient_account ||
+    !!paymentMethod?.contact_phone ||
+    !!paymentMethod?.contact_wechat
+  const isCorporate = paymentMethod?.type === 'corporate'
+  const paymentMethodName = paymentMethod?.name ? t(paymentMethod.name) : ''
+  const paymentInstructions = paymentMethod?.payment_instructions
+    ? t(paymentMethod.payment_instructions)
+    : ''
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-md'>
         <AlertDialogHeader>
           <AlertDialogTitle className='text-xl font-semibold'>
-            {t('Confirm Payment')}
+            {isCorporate ? t('Corporate Payment') : t('Confirm Payment')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {t('Review your payment details')}
+            {isCorporate
+              ? t('Review the bank transfer details before uploading proof')
+              : t('Review your payment details')}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <div className='space-y-3 py-3 sm:space-y-4 sm:py-4'>
-          <div className='flex items-center justify-between'>
+          {isCorporate && (
+            <div className='bg-muted/50 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 rounded-lg px-3 py-3'>
+              <span className='text-muted-foreground text-sm'>
+                {t('Current Balance')}
+              </span>
+              <span className='justify-self-end text-right font-semibold'>
+                {formatQuota(currentBalance)}
+              </span>
+            </div>
+          )}
+          <div className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-3'>
             <span className='text-muted-foreground text-sm'>
               {t('Topup Amount')}
             </span>
-            <span className='text-lg font-semibold'>
+            <span className='justify-self-end text-right text-lg font-semibold'>
               {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
                 digitsLarge: 2,
                 digitsSmall: 2,
@@ -96,14 +119,14 @@ export function PaymentConfirmDialog({
             </span>
           </div>
 
-          <div className='flex items-center justify-between'>
+          <div className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-3'>
             <span className='text-muted-foreground text-sm'>
               {t('You Pay')}
             </span>
             {calculating ? (
               <Skeleton className='h-6 w-24' />
             ) : (
-              <div className='flex items-baseline gap-2'>
+              <div className='flex items-baseline gap-2 justify-self-end text-right'>
                 <span className='text-2xl font-semibold'>
                   {formatCurrency(paymentAmount)}
                 </span>
@@ -128,33 +151,40 @@ export function PaymentConfirmDialog({
           )}
 
           <div className='border-t pt-4'>
-            <div className='flex items-center justify-between'>
+            <div className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-3'>
               <span className='text-muted-foreground text-sm'>
                 {t('Payment Method')}
               </span>
-              <div className='flex items-center gap-2'>
+              <div className='flex items-center gap-2 justify-self-end text-right'>
                 {getPaymentIcon(
                   paymentMethod?.type,
                   'h-4 w-4',
                   paymentMethod?.icon,
-                  paymentMethod?.name
+                  paymentMethodName
                 )}
-                <span className='font-medium'>{paymentMethod?.name}</span>
+                <span className='font-medium'>{paymentMethodName}</span>
               </div>
             </div>
           </div>
 
           {hasRecipientInfo && (
-            <div className='bg-muted/50 space-y-2 rounded-lg py-3 text-sm'>
+            <div className='bg-muted/50 space-y-2 rounded-lg px-3 py-3 text-sm'>
               <div className='font-medium'>{t('Recipient information')}</div>
               {paymentMethod?.recipient_name && (
                 <div className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4'>
                   <span className='text-muted-foreground'>
                     {t('Recipient name')}
                   </span>
-                  <span className='justify-self-end text-right'>
-                    {paymentMethod.recipient_name}
-                  </span>
+                  <div className='flex min-w-0 items-center justify-self-end'>
+                    <span className='text-right break-words'>
+                      {paymentMethod.recipient_name}
+                    </span>
+                    <CopyButton
+                      value={paymentMethod.recipient_name}
+                      className='size-7'
+                      iconClassName='size-3.5'
+                    />
+                  </div>
                 </div>
               )}
               {paymentMethod?.recipient_bank && (
@@ -162,9 +192,16 @@ export function PaymentConfirmDialog({
                   <span className='text-muted-foreground'>
                     {t('Recipient bank')}
                   </span>
-                  <span className='justify-self-end text-right'>
-                    {paymentMethod.recipient_bank}
-                  </span>
+                  <div className='flex min-w-0 items-center justify-self-end'>
+                    <span className='text-right break-words'>
+                      {paymentMethod.recipient_bank}
+                    </span>
+                    <CopyButton
+                      value={paymentMethod.recipient_bank}
+                      className='size-7'
+                      iconClassName='size-3.5'
+                    />
+                  </div>
                 </div>
               )}
               {paymentMethod?.recipient_account && (
@@ -172,11 +209,62 @@ export function PaymentConfirmDialog({
                   <span className='text-muted-foreground'>
                     {t('Recipient account')}
                   </span>
-                  <span className='justify-self-end text-right font-mono'>
-                    {paymentMethod.recipient_account}
-                  </span>
+                  <div className='flex min-w-0 items-center justify-self-end'>
+                    <span className='text-right font-mono break-all'>
+                      {paymentMethod.recipient_account}
+                    </span>
+                    <CopyButton
+                      value={paymentMethod.recipient_account}
+                      className='size-7'
+                      iconClassName='size-3.5'
+                    />
+                  </div>
                 </div>
               )}
+              {paymentMethod?.contact_phone && (
+                <div className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4'>
+                  <span className='text-muted-foreground'>
+                    {t('Contact phone')}
+                  </span>
+                  <div className='flex min-w-0 items-center justify-self-end'>
+                    <span className='text-right break-all'>
+                      {paymentMethod.contact_phone}
+                    </span>
+                    <CopyButton
+                      value={paymentMethod.contact_phone}
+                      className='size-7'
+                      iconClassName='size-3.5'
+                    />
+                  </div>
+                </div>
+              )}
+              {paymentMethod?.contact_wechat && (
+                <div className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4'>
+                  <span className='text-muted-foreground'>
+                    {t('Contact WeChat')}
+                  </span>
+                  <div className='flex min-w-0 items-center justify-self-end'>
+                    <span className='text-right break-all'>
+                      {paymentMethod.contact_wechat}
+                    </span>
+                    <CopyButton
+                      value={paymentMethod.contact_wechat}
+                      className='size-7'
+                      iconClassName='size-3.5'
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {isCorporate && paymentInstructions && (
+            <div className='border-primary/20 bg-primary/5 rounded-lg border p-3'>
+              <div className='mb-1 text-sm font-medium'>
+                {t('Payment instructions')}
+              </div>
+              <p className='text-muted-foreground text-sm leading-6 whitespace-pre-wrap'>
+                {paymentInstructions}
+              </p>
             </div>
           )}
         </div>
@@ -187,7 +275,7 @@ export function PaymentConfirmDialog({
           </AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={processing}>
             {processing && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-            {t('Confirm Payment')}
+            {isCorporate ? t('Upload Proof') : t('Confirm Payment')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
