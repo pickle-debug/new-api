@@ -246,6 +246,252 @@ const newKeys = {
   },
 }
 
+const goPayTranslations = {
+  en: {
+    'After payment, close this dialog and refresh your balance.':
+      'After payment, close this dialog and refresh your balance.',
+    'Alipay App ID': 'Alipay App ID',
+    'Alipay application private key': 'Alipay application private key',
+    'Alipay callback URL:': 'Alipay callback URL:',
+    'Alipay public key': 'Alipay public key',
+    'Alipay sandbox': 'Alipay sandbox',
+    'Direct integration through go-pay using official merchant credentials.':
+      'Direct integration through go-pay using official merchant credentials.',
+    'Enable official Alipay': 'Enable official Alipay',
+    'Enable official WeChat Pay': 'Enable official WeChat Pay',
+    'Merchant API private key': 'Merchant API private key',
+    'Merchant certificate serial number': 'Merchant certificate serial number',
+    'Official Alipay and WeChat Pay': 'Official Alipay and WeChat Pay',
+    'Scan the QR code with WeChat to complete payment.':
+      'Scan the QR code with WeChat to complete payment.',
+    'Use Alipay computer website payment.':
+      'Use Alipay computer website payment.',
+    'Use the Alipay sandbox gateway.': 'Use the Alipay sandbox gateway.',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      'Use WeChat Pay API v3 Native QR code payment.',
+    'Used to verify Alipay asynchronous notifications.':
+      'Used to verify Alipay asynchronous notifications.',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      'Used to verify WeChat Pay API v3 responses and notifications.',
+    'WeChat App ID': 'WeChat App ID',
+    'WeChat merchant ID': 'WeChat merchant ID',
+    'WeChat Pay API v3 key': 'WeChat Pay API v3 key',
+    'WeChat Pay callback URL:': 'WeChat Pay callback URL:',
+    'WeChat platform certificate': 'WeChat platform certificate',
+    'WeChat platform certificate serial number':
+      'WeChat platform certificate serial number',
+  },
+  zh: {
+    'After payment, close this dialog and refresh your balance.':
+      '支付完成后，关闭此对话框并刷新余额。',
+    'Alipay App ID': '支付宝 App ID',
+    'Alipay application private key': '支付宝应用私钥',
+    'Alipay callback URL:': '支付宝回调地址：',
+    'Alipay public key': '支付宝公钥',
+    'Alipay sandbox': '支付宝沙箱',
+    'Direct integration through go-pay using official merchant credentials.':
+      '通过 go-pay 使用官方商户凭据直接接入。',
+    'Enable official Alipay': '启用官方支付宝',
+    'Enable official WeChat Pay': '启用官方微信支付',
+    'Merchant API private key': '商户 API 私钥',
+    'Merchant certificate serial number': '商户证书序列号',
+    'Official Alipay and WeChat Pay': '官方支付宝与微信支付',
+    'Scan the QR code with WeChat to complete payment.':
+      '请使用微信扫描二维码完成支付。',
+    'Use Alipay computer website payment.': '使用支付宝电脑网站支付。',
+    'Use the Alipay sandbox gateway.': '使用支付宝沙箱网关。',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      '使用微信支付 API v3 Native 扫码支付。',
+    'Used to verify Alipay asynchronous notifications.':
+      '用于验证支付宝异步通知。',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      '用于验证微信支付 API v3 响应和通知。',
+    'WeChat App ID': '微信 App ID',
+    'WeChat merchant ID': '微信支付商户号',
+    'WeChat Pay API v3 key': '微信支付 API v3 密钥',
+    'WeChat Pay callback URL:': '微信支付回调地址：',
+    'WeChat platform certificate': '微信支付平台证书',
+    'WeChat platform certificate serial number': '微信支付平台证书序列号',
+  },
+  'zh-TW': {
+    'After payment, close this dialog and refresh your balance.':
+      '付款完成後，請關閉此對話框並重新整理餘額。',
+    'Alipay App ID': '支付寶 App ID',
+    'Alipay application private key': '支付寶應用程式私鑰',
+    'Alipay callback URL:': '支付寶回呼網址：',
+    'Alipay public key': '支付寶公鑰',
+    'Alipay sandbox': '支付寶沙箱',
+    'Direct integration through go-pay using official merchant credentials.':
+      '透過 go-pay 使用官方商戶憑證直接串接。',
+    'Enable official Alipay': '啟用官方支付寶',
+    'Enable official WeChat Pay': '啟用官方微信支付',
+    'Merchant API private key': '商戶 API 私鑰',
+    'Merchant certificate serial number': '商戶憑證序號',
+    'Official Alipay and WeChat Pay': '官方支付寶與微信支付',
+    'Scan the QR code with WeChat to complete payment.':
+      '請使用微信掃描 QR Code 完成付款。',
+    'Use Alipay computer website payment.': '使用支付寶電腦網站支付。',
+    'Use the Alipay sandbox gateway.': '使用支付寶沙箱閘道。',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      '使用微信支付 API v3 Native 掃碼支付。',
+    'Used to verify Alipay asynchronous notifications.':
+      '用於驗證支付寶非同步通知。',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      '用於驗證微信支付 API v3 回應與通知。',
+    'WeChat App ID': '微信 App ID',
+    'WeChat merchant ID': '微信支付商戶號',
+    'WeChat Pay API v3 key': '微信支付 API v3 金鑰',
+    'WeChat Pay callback URL:': '微信支付回呼網址：',
+    'WeChat platform certificate': '微信支付平台憑證',
+    'WeChat platform certificate serial number': '微信支付平台憑證序號',
+  },
+  fr: {
+    'After payment, close this dialog and refresh your balance.':
+      'Après le paiement, fermez cette fenêtre et actualisez votre solde.',
+    'Alipay App ID': 'ID d’application Alipay',
+    'Alipay application private key': 'Clé privée de l’application Alipay',
+    'Alipay callback URL:': 'URL de rappel Alipay :',
+    'Alipay public key': 'Clé publique Alipay',
+    'Alipay sandbox': 'Bac à sable Alipay',
+    'Direct integration through go-pay using official merchant credentials.':
+      'Intégration directe via go-pay avec les identifiants marchand officiels.',
+    'Enable official Alipay': 'Activer Alipay officiel',
+    'Enable official WeChat Pay': 'Activer WeChat Pay officiel',
+    'Merchant API private key': 'Clé privée API du marchand',
+    'Merchant certificate serial number':
+      'Numéro de série du certificat marchand',
+    'Official Alipay and WeChat Pay': 'Alipay et WeChat Pay officiels',
+    'Scan the QR code with WeChat to complete payment.':
+      'Scannez le QR code avec WeChat pour terminer le paiement.',
+    'Use Alipay computer website payment.':
+      'Utiliser le paiement Alipay pour site web sur ordinateur.',
+    'Use the Alipay sandbox gateway.':
+      'Utiliser la passerelle de test Alipay.',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      'Utiliser le paiement QR Native de l’API v3 WeChat Pay.',
+    'Used to verify Alipay asynchronous notifications.':
+      'Utilisée pour vérifier les notifications asynchrones Alipay.',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      'Utilisé pour vérifier les réponses et notifications de l’API v3 WeChat Pay.',
+    'WeChat App ID': 'ID d’application WeChat',
+    'WeChat merchant ID': 'ID marchand WeChat',
+    'WeChat Pay API v3 key': 'Clé API v3 WeChat Pay',
+    'WeChat Pay callback URL:': 'URL de rappel WeChat Pay :',
+    'WeChat platform certificate': 'Certificat de plateforme WeChat',
+    'WeChat platform certificate serial number':
+      'Numéro de série du certificat de plateforme WeChat',
+  },
+  ja: {
+    'After payment, close this dialog and refresh your balance.':
+      '支払い後、このダイアログを閉じて残高を更新してください。',
+    'Alipay App ID': 'Alipay アプリ ID',
+    'Alipay application private key': 'Alipay アプリケーション秘密鍵',
+    'Alipay callback URL:': 'Alipay コールバック URL：',
+    'Alipay public key': 'Alipay 公開鍵',
+    'Alipay sandbox': 'Alipay サンドボックス',
+    'Direct integration through go-pay using official merchant credentials.':
+      '公式加盟店認証情報を使用して go-pay 経由で直接連携します。',
+    'Enable official Alipay': '公式 Alipay を有効化',
+    'Enable official WeChat Pay': '公式 WeChat Pay を有効化',
+    'Merchant API private key': '加盟店 API 秘密鍵',
+    'Merchant certificate serial number': '加盟店証明書シリアル番号',
+    'Official Alipay and WeChat Pay': '公式 Alipay / WeChat Pay',
+    'Scan the QR code with WeChat to complete payment.':
+      'WeChat で QR コードを読み取り、支払いを完了してください。',
+    'Use Alipay computer website payment.':
+      'Alipay の PC ウェブサイト決済を使用します。',
+    'Use the Alipay sandbox gateway.':
+      'Alipay サンドボックスゲートウェイを使用します。',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      'WeChat Pay API v3 Native QR コード決済を使用します。',
+    'Used to verify Alipay asynchronous notifications.':
+      'Alipay の非同期通知の検証に使用します。',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      'WeChat Pay API v3 の応答と通知の検証に使用します。',
+    'WeChat App ID': 'WeChat アプリ ID',
+    'WeChat merchant ID': 'WeChat Pay 加盟店 ID',
+    'WeChat Pay API v3 key': 'WeChat Pay API v3 キー',
+    'WeChat Pay callback URL:': 'WeChat Pay コールバック URL：',
+    'WeChat platform certificate': 'WeChat プラットフォーム証明書',
+    'WeChat platform certificate serial number':
+      'WeChat プラットフォーム証明書シリアル番号',
+  },
+  ru: {
+    'After payment, close this dialog and refresh your balance.':
+      'После оплаты закройте это окно и обновите баланс.',
+    'Alipay App ID': 'ID приложения Alipay',
+    'Alipay application private key': 'Закрытый ключ приложения Alipay',
+    'Alipay callback URL:': 'URL обратного вызова Alipay:',
+    'Alipay public key': 'Открытый ключ Alipay',
+    'Alipay sandbox': 'Песочница Alipay',
+    'Direct integration through go-pay using official merchant credentials.':
+      'Прямая интеграция через go-pay с официальными данными продавца.',
+    'Enable official Alipay': 'Включить официальный Alipay',
+    'Enable official WeChat Pay': 'Включить официальный WeChat Pay',
+    'Merchant API private key': 'Закрытый ключ API продавца',
+    'Merchant certificate serial number':
+      'Серийный номер сертификата продавца',
+    'Official Alipay and WeChat Pay': 'Официальные Alipay и WeChat Pay',
+    'Scan the QR code with WeChat to complete payment.':
+      'Отсканируйте QR-код в WeChat, чтобы завершить оплату.',
+    'Use Alipay computer website payment.':
+      'Использовать оплату Alipay для компьютерного сайта.',
+    'Use the Alipay sandbox gateway.':
+      'Использовать тестовый шлюз Alipay.',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      'Использовать Native QR-оплату WeChat Pay API v3.',
+    'Used to verify Alipay asynchronous notifications.':
+      'Используется для проверки асинхронных уведомлений Alipay.',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      'Используется для проверки ответов и уведомлений WeChat Pay API v3.',
+    'WeChat App ID': 'ID приложения WeChat',
+    'WeChat merchant ID': 'ID продавца WeChat',
+    'WeChat Pay API v3 key': 'Ключ WeChat Pay API v3',
+    'WeChat Pay callback URL:': 'URL обратного вызова WeChat Pay:',
+    'WeChat platform certificate': 'Сертификат платформы WeChat',
+    'WeChat platform certificate serial number':
+      'Серийный номер сертификата платформы WeChat',
+  },
+  vi: {
+    'After payment, close this dialog and refresh your balance.':
+      'Sau khi thanh toán, hãy đóng hộp thoại này và làm mới số dư.',
+    'Alipay App ID': 'ID ứng dụng Alipay',
+    'Alipay application private key': 'Khóa riêng ứng dụng Alipay',
+    'Alipay callback URL:': 'URL callback Alipay:',
+    'Alipay public key': 'Khóa công khai Alipay',
+    'Alipay sandbox': 'Môi trường thử nghiệm Alipay',
+    'Direct integration through go-pay using official merchant credentials.':
+      'Tích hợp trực tiếp qua go-pay bằng thông tin thương nhân chính thức.',
+    'Enable official Alipay': 'Bật Alipay chính thức',
+    'Enable official WeChat Pay': 'Bật WeChat Pay chính thức',
+    'Merchant API private key': 'Khóa riêng API của thương nhân',
+    'Merchant certificate serial number': 'Số sê-ri chứng thư thương nhân',
+    'Official Alipay and WeChat Pay': 'Alipay và WeChat Pay chính thức',
+    'Scan the QR code with WeChat to complete payment.':
+      'Quét mã QR bằng WeChat để hoàn tất thanh toán.',
+    'Use Alipay computer website payment.':
+      'Sử dụng thanh toán trang web máy tính Alipay.',
+    'Use the Alipay sandbox gateway.': 'Sử dụng cổng thử nghiệm Alipay.',
+    'Use WeChat Pay API v3 Native QR code payment.':
+      'Sử dụng thanh toán mã QR Native của WeChat Pay API v3.',
+    'Used to verify Alipay asynchronous notifications.':
+      'Dùng để xác minh thông báo bất đồng bộ của Alipay.',
+    'Used to verify WeChat Pay API v3 responses and notifications.':
+      'Dùng để xác minh phản hồi và thông báo WeChat Pay API v3.',
+    'WeChat App ID': 'ID ứng dụng WeChat',
+    'WeChat merchant ID': 'ID thương nhân WeChat',
+    'WeChat Pay API v3 key': 'Khóa WeChat Pay API v3',
+    'WeChat Pay callback URL:': 'URL callback WeChat Pay:',
+    'WeChat platform certificate': 'Chứng thư nền tảng WeChat',
+    'WeChat platform certificate serial number':
+      'Số sê-ri chứng thư nền tảng WeChat',
+  },
+}
+
+for (const [locale, translations] of Object.entries(goPayTranslations)) {
+  Object.assign(newKeys[locale], translations)
+}
+
 async function main() {
   let totalApplied = 0
 

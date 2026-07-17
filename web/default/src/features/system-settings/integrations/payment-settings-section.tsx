@@ -142,6 +142,19 @@ const paymentSchema = z.object({
       })
     }
   }),
+  GoPayAlipayEnabled: z.boolean(),
+  GoPayAlipayAppID: z.string(),
+  GoPayAlipayPrivateKey: z.string(),
+  GoPayAlipayPublicKey: z.string(),
+  GoPayAlipaySandbox: z.boolean(),
+  GoPayWeChatEnabled: z.boolean(),
+  GoPayWeChatAppID: z.string(),
+  GoPayWeChatMchID: z.string(),
+  GoPayWeChatSerialNo: z.string(),
+  GoPayWeChatAPIv3Key: z.string(),
+  GoPayWeChatPrivateKey: z.string(),
+  GoPayWeChatPlatformCert: z.string(),
+  GoPayWeChatPlatformSerial: z.string(),
   CorporatePaymentEnabled: z.boolean(),
   CorporatePaymentName: z.string(),
   CorporatePaymentBank: z.string(),
@@ -477,6 +490,19 @@ export function PaymentSettingsSection({
       PayMethods: values.PayMethods.trim(),
       AmountOptions: values.AmountOptions.trim(),
       AmountDiscount: values.AmountDiscount.trim(),
+      GoPayAlipayEnabled: values.GoPayAlipayEnabled,
+      GoPayAlipayAppID: values.GoPayAlipayAppID.trim(),
+      GoPayAlipayPrivateKey: values.GoPayAlipayPrivateKey.trim(),
+      GoPayAlipayPublicKey: values.GoPayAlipayPublicKey.trim(),
+      GoPayAlipaySandbox: values.GoPayAlipaySandbox,
+      GoPayWeChatEnabled: values.GoPayWeChatEnabled,
+      GoPayWeChatAppID: values.GoPayWeChatAppID.trim(),
+      GoPayWeChatMchID: values.GoPayWeChatMchID.trim(),
+      GoPayWeChatSerialNo: values.GoPayWeChatSerialNo.trim(),
+      GoPayWeChatAPIv3Key: values.GoPayWeChatAPIv3Key.trim(),
+      GoPayWeChatPrivateKey: values.GoPayWeChatPrivateKey.trim(),
+      GoPayWeChatPlatformCert: values.GoPayWeChatPlatformCert.trim(),
+      GoPayWeChatPlatformSerial: values.GoPayWeChatPlatformSerial.trim(),
       CorporatePaymentEnabled: values.CorporatePaymentEnabled,
       CorporatePaymentName: values.CorporatePaymentName.trim(),
       CorporatePaymentBank: values.CorporatePaymentBank.trim(),
@@ -533,6 +559,21 @@ export function PaymentSettingsSection({
       PayMethods: initialRef.current.PayMethods.trim(),
       AmountOptions: initialRef.current.AmountOptions.trim(),
       AmountDiscount: initialRef.current.AmountDiscount.trim(),
+      GoPayAlipayEnabled: initialRef.current.GoPayAlipayEnabled,
+      GoPayAlipayAppID: initialRef.current.GoPayAlipayAppID.trim(),
+      GoPayAlipayPrivateKey: initialRef.current.GoPayAlipayPrivateKey.trim(),
+      GoPayAlipayPublicKey: initialRef.current.GoPayAlipayPublicKey.trim(),
+      GoPayAlipaySandbox: initialRef.current.GoPayAlipaySandbox,
+      GoPayWeChatEnabled: initialRef.current.GoPayWeChatEnabled,
+      GoPayWeChatAppID: initialRef.current.GoPayWeChatAppID.trim(),
+      GoPayWeChatMchID: initialRef.current.GoPayWeChatMchID.trim(),
+      GoPayWeChatSerialNo: initialRef.current.GoPayWeChatSerialNo.trim(),
+      GoPayWeChatAPIv3Key: initialRef.current.GoPayWeChatAPIv3Key.trim(),
+      GoPayWeChatPrivateKey: initialRef.current.GoPayWeChatPrivateKey.trim(),
+      GoPayWeChatPlatformCert:
+        initialRef.current.GoPayWeChatPlatformCert.trim(),
+      GoPayWeChatPlatformSerial:
+        initialRef.current.GoPayWeChatPlatformSerial.trim(),
       CorporatePaymentEnabled: initialRef.current.CorporatePaymentEnabled,
       CorporatePaymentName: initialRef.current.CorporatePaymentName.trim(),
       CorporatePaymentBank: initialRef.current.CorporatePaymentBank.trim(),
@@ -637,6 +678,75 @@ export function PaymentSettingsSection({
         key: 'payment_setting.amount_discount',
         value: sanitized.AmountDiscount,
       })
+    }
+
+    const goPayOptions: Array<{
+      formKey: keyof typeof sanitized
+      optionKey: string
+      secret?: boolean
+    }> = [
+      {
+        formKey: 'GoPayAlipayEnabled',
+        optionKey: 'payment_setting.gopay_alipay_enabled',
+      },
+      {
+        formKey: 'GoPayAlipayAppID',
+        optionKey: 'payment_setting.gopay_alipay_app_id',
+      },
+      {
+        formKey: 'GoPayAlipayPrivateKey',
+        optionKey: 'payment_setting.gopay_alipay_private_key',
+        secret: true,
+      },
+      {
+        formKey: 'GoPayAlipayPublicKey',
+        optionKey: 'payment_setting.gopay_alipay_public_key',
+      },
+      {
+        formKey: 'GoPayAlipaySandbox',
+        optionKey: 'payment_setting.gopay_alipay_sandbox',
+      },
+      {
+        formKey: 'GoPayWeChatEnabled',
+        optionKey: 'payment_setting.gopay_wechat_enabled',
+      },
+      {
+        formKey: 'GoPayWeChatAppID',
+        optionKey: 'payment_setting.gopay_wechat_app_id',
+      },
+      {
+        formKey: 'GoPayWeChatMchID',
+        optionKey: 'payment_setting.gopay_wechat_mch_id',
+      },
+      {
+        formKey: 'GoPayWeChatSerialNo',
+        optionKey: 'payment_setting.gopay_wechat_serial_no',
+      },
+      {
+        formKey: 'GoPayWeChatAPIv3Key',
+        optionKey: 'payment_setting.gopay_wechat_api_v3_key',
+        secret: true,
+      },
+      {
+        formKey: 'GoPayWeChatPrivateKey',
+        optionKey: 'payment_setting.gopay_wechat_private_key',
+        secret: true,
+      },
+      {
+        formKey: 'GoPayWeChatPlatformCert',
+        optionKey: 'payment_setting.gopay_wechat_platform_cert',
+      },
+      {
+        formKey: 'GoPayWeChatPlatformSerial',
+        optionKey: 'payment_setting.gopay_wechat_platform_serial',
+      },
+    ]
+    for (const option of goPayOptions) {
+      const value = sanitized[option.formKey]
+      if (option.secret && !value) continue
+      if (value !== initial[option.formKey]) {
+        updates.push({ key: option.optionKey, value })
+      }
     }
 
     if (sanitized.CorporatePaymentEnabled !== initial.CorporatePaymentEnabled) {
@@ -1045,12 +1155,13 @@ export function PaymentSettingsSection({
           />
           <Tabs defaultValue='general' className='min-w-0'>
             <div className='overflow-x-auto pb-1'>
-              <TabsList className='grid min-w-[50rem] grid-cols-7'>
+              <TabsList className='grid min-w-[58rem] grid-cols-8'>
                 <TabsTrigger value='general'>{t('General')}</TabsTrigger>
                 <TabsTrigger value='corporate'>
                   {t('Corporate Payment')}
                 </TabsTrigger>
                 <TabsTrigger value='epay'>Epay</TabsTrigger>
+                <TabsTrigger value='gopay'>Alipay / WeChat</TabsTrigger>
                 <TabsTrigger value='stripe'>{t('Stripe')}</TabsTrigger>
                 <TabsTrigger value='creem'>Creem</TabsTrigger>
                 <TabsTrigger value='waffo-pancake'>Waffo Pancake</TabsTrigger>
@@ -1622,6 +1733,241 @@ export function PaymentSettingsSection({
                     )}
                   />
                 </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value='gopay' className={paymentTabContentClassName}>
+              <div className='space-y-8'>
+                <div>
+                  <h3 className='text-lg font-medium'>
+                    {t('Official Alipay and WeChat Pay')}
+                  </h3>
+                  <p className='text-muted-foreground text-sm'>
+                    {t(
+                      'Direct integration through go-pay using official merchant credentials.'
+                    )}
+                  </p>
+                </div>
+
+                <section className='space-y-4 rounded-xl border p-4'>
+                  <FormField
+                    control={form.control}
+                    name='GoPayAlipayEnabled'
+                    render={({ field }) => (
+                      <SettingsSwitchItem>
+                        <SettingsSwitchContent>
+                          <FormLabel>{t('Enable official Alipay')}</FormLabel>
+                          <FormDescription>
+                            {t('Use Alipay computer website payment.')}
+                          </FormDescription>
+                        </SettingsSwitchContent>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </SettingsSwitchItem>
+                    )}
+                  />
+                  <div className='grid gap-6 md:grid-cols-2'>
+                    <FormField
+                      control={form.control}
+                      name='GoPayAlipayAppID'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Alipay App ID')}</FormLabel>
+                          <FormControl>
+                            <Input autoComplete='off' {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='GoPayAlipaySandbox'
+                      render={({ field }) => (
+                        <SettingsSwitchItem>
+                          <SettingsSwitchContent>
+                            <FormLabel>{t('Alipay sandbox')}</FormLabel>
+                            <FormDescription>
+                              {t('Use the Alipay sandbox gateway.')}
+                            </FormDescription>
+                          </SettingsSwitchContent>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </SettingsSwitchItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name='GoPayAlipayPrivateKey'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('Alipay application private key')}
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={5}
+                            placeholder={t(
+                              'Leave blank unless rotating the secret'
+                            )}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='GoPayAlipayPublicKey'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Alipay public key')}</FormLabel>
+                        <FormControl>
+                          <Textarea rows={5} {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            'Used to verify Alipay asynchronous notifications.'
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className='text-muted-foreground text-sm'>
+                    {t('Alipay callback URL:')}{' '}
+                    <code>{'<ServerAddress>/api/gopay/alipay/notify'}</code>
+                  </p>
+                </section>
+
+                <section className='space-y-4 rounded-xl border p-4'>
+                  <FormField
+                    control={form.control}
+                    name='GoPayWeChatEnabled'
+                    render={({ field }) => (
+                      <SettingsSwitchItem>
+                        <SettingsSwitchContent>
+                          <FormLabel>
+                            {t('Enable official WeChat Pay')}
+                          </FormLabel>
+                          <FormDescription>
+                            {t('Use WeChat Pay API v3 Native QR code payment.')}
+                          </FormDescription>
+                        </SettingsSwitchContent>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </SettingsSwitchItem>
+                    )}
+                  />
+                  <div className='grid gap-6 md:grid-cols-2'>
+                    {(
+                      [
+                        ['GoPayWeChatAppID', 'WeChat App ID'],
+                        ['GoPayWeChatMchID', 'WeChat merchant ID'],
+                        [
+                          'GoPayWeChatSerialNo',
+                          'Merchant certificate serial number',
+                        ],
+                        [
+                          'GoPayWeChatPlatformSerial',
+                          'WeChat platform certificate serial number',
+                        ],
+                      ] as const
+                    ).map(([name, label]) => (
+                      <FormField
+                        key={name}
+                        control={form.control}
+                        name={name}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t(label)}</FormLabel>
+                            <FormControl>
+                              <Input autoComplete='off' {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name='GoPayWeChatAPIv3Key'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('WeChat Pay API v3 key')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type='password'
+                            autoComplete='new-password'
+                            placeholder={t(
+                              'Leave blank unless rotating the secret'
+                            )}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='GoPayWeChatPrivateKey'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Merchant API private key')}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={5}
+                            placeholder={t(
+                              'Leave blank unless rotating the secret'
+                            )}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='GoPayWeChatPlatformCert'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('WeChat platform certificate')}
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea rows={5} {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            'Used to verify WeChat Pay API v3 responses and notifications.'
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className='text-muted-foreground text-sm'>
+                    {t('WeChat Pay callback URL:')}{' '}
+                    <code>{'<ServerAddress>/api/gopay/wechat/notify'}</code>
+                  </p>
+                </section>
               </div>
             </TabsContent>
 

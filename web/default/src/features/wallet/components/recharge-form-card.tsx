@@ -129,6 +129,8 @@ export function RechargeFormCard({
 
   const hasConfigurableTopup =
     topupInfo?.enable_online_topup ||
+    topupInfo?.enable_gopay_alipay_topup ||
+    topupInfo?.enable_gopay_wechat_topup ||
     topupInfo?.enable_stripe_topup ||
     enableWaffoTopup ||
     enableWaffoPancakeTopup

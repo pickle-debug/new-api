@@ -70,7 +70,12 @@ interface SubscriptionPlansCardProps {
 
 function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
   return payMethods.filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem'
+    (method) =>
+      method?.type &&
+      method.type !== 'stripe' &&
+      method.type !== 'creem' &&
+      method.type !== 'gopay_alipay' &&
+      method.type !== 'gopay_wechat'
   )
 }
 

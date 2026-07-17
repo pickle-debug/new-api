@@ -30,6 +30,16 @@ func GetTopUpInfo(c *gin.Context) {
 	if !complianceConfirmed {
 		payMethods = []map[string]string{}
 	}
+	if isGoPayAlipayEnabled() {
+		payMethods = append(payMethods, map[string]string{
+			"name": "Alipay", "type": model.PaymentMethodGoPayAlipay, "icon": "SiAlipay",
+		})
+	}
+	if isGoPayWeChatEnabled() {
+		payMethods = append(payMethods, map[string]string{
+			"name": "WeChat Pay", "type": model.PaymentMethodGoPayWeChat, "icon": "SiWechat",
+		})
+	}
 	corporateSetting := operation_setting.GetPaymentSetting()
 	userGroup, groupErr := model.GetUserGroup(c.GetInt("id"), false)
 	if complianceConfirmed && corporateSetting.CorporatePaymentEnabled &&
@@ -118,6 +128,8 @@ func GetTopUpInfo(c *gin.Context) {
 
 	data := gin.H{
 		"enable_online_topup":              isEpayTopUpEnabled(),
+		"enable_gopay_alipay_topup":        isGoPayAlipayEnabled(),
+		"enable_gopay_wechat_topup":        isGoPayWeChatEnabled(),
 		"enable_stripe_topup":              isStripeTopUpEnabled(),
 		"enable_creem_topup":               isCreemTopUpEnabled(),
 		"enable_waffo_topup":               enableWaffo,

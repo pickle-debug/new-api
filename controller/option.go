@@ -33,6 +33,11 @@ func isPaymentComplianceOptionKey(key string) bool {
 	return strings.HasPrefix(key, "payment_setting.compliance_")
 }
 
+func isGoPayEnableOptionKey(key string) bool {
+	return key == "payment_setting.gopay_alipay_enabled" ||
+		key == "payment_setting.gopay_wechat_enabled"
+}
+
 func isPositiveOptionValue(value string) bool {
 	intValue, err := strconv.Atoi(strings.TrimSpace(value))
 	if err == nil {
@@ -81,11 +86,14 @@ func GetOptions(c *gin.Context) {
 	common.OptionMapRWMutex.Lock()
 	for k, v := range common.OptionMap {
 		value := common.Interface2String(v)
+		lowerKey := strings.ToLower(k)
 		isSensitiveKey := strings.HasSuffix(k, "Token") ||
 			strings.HasSuffix(k, "Secret") ||
 			strings.HasSuffix(k, "Key") ||
 			strings.HasSuffix(k, "secret") ||
-			strings.HasSuffix(k, "api_key")
+			strings.HasSuffix(k, "api_key") ||
+			strings.Contains(lowerKey, "private_key") ||
+			strings.Contains(lowerKey, "api_v3_key")
 		if isSensitiveKey {
 			continue
 		}
@@ -146,6 +154,10 @@ func UpdateOption(c *gin.Context) {
 	default:
 		if isPaymentComplianceOptionKey(option.Key) {
 			common.ApiErrorMsg(c, "合规确认字段不允许通过通用设置接口修改")
+			return
+		}
+		if isGoPayEnableOptionKey(option.Key) && option.Value == "true" && !operation_setting.IsPaymentComplianceConfirmed() {
+			common.ApiErrorI18n(c, i18n.MsgPaymentComplianceRequired)
 			return
 		}
 	}

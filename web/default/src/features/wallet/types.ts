@@ -38,6 +38,11 @@ export type AmountResponse = ApiResponse<string>
 export type PaymentResponse = ApiResponse<Record<string, unknown>> & {
   url?: string
 }
+export type GoPayPaymentResponse = ApiResponse<{
+  pay_url?: string
+  code_url?: string
+  trade_no: string
+}>
 export type StripePaymentResponse = ApiResponse<{ pay_link: string }>
 export type AffiliateCodeResponse = ApiResponse<string>
 export type AffiliateTransferResponse = ApiResponse
@@ -134,6 +139,8 @@ export interface WaffoPayMethod {
 export interface TopupInfo {
   /** Whether online topup is enabled */
   enable_online_topup: boolean
+  enable_gopay_alipay_topup: boolean
+  enable_gopay_wechat_topup: boolean
   /** Whether Stripe topup is enabled */
   enable_stripe_topup: boolean
   /** Available payment methods */

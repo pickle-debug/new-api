@@ -75,6 +75,8 @@ func SetApiRouter(router *gin.Engine) {
 			userRoute.GET("/logout", controller.Logout)
 			userRoute.POST("/epay/notify", anonymousRequestBodyLimit, controller.EpayNotify)
 			userRoute.GET("/epay/notify", controller.EpayNotify)
+			apiRouter.POST("/gopay/alipay/notify", anonymousRequestBodyLimit, controller.GoPayAlipayNotify)
+			apiRouter.POST("/gopay/wechat/notify", anonymousRequestBodyLimit, controller.GoPayWeChatNotify)
 			userRoute.GET("/groups", controller.GetUserGroups)
 
 			selfRoute := userRoute.Group("/")
@@ -97,6 +99,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/topup/self", controller.GetUserTopUps)
 				selfRoute.POST("/topup", middleware.CriticalRateLimit(), controller.TopUp)
 				selfRoute.POST("/pay", middleware.CriticalRateLimit(), controller.RequestEpay)
+				selfRoute.POST("/gopay/pay", middleware.CriticalRateLimit(), controller.RequestGoPay)
 				selfRoute.POST("/corporate/pay", middleware.CriticalRateLimit(), controller.SubmitCorporateTopUp)
 				selfRoute.POST("/topup/cancel", middleware.CriticalRateLimit(), controller.CancelCorporateTopUp)
 				selfRoute.GET("/topup/:trade_no/proof", controller.GetCorporateTopUpProof)

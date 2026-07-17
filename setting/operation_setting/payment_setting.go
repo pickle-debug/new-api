@@ -10,6 +10,21 @@ type PaymentSetting struct {
 	AmountOptions  []int           `json:"amount_options"`
 	AmountDiscount map[int]float64 `json:"amount_discount"` // 充值金额对应的折扣，例如 100 元 0.9 表示 100 元充值享受 9 折优惠
 
+	GoPayAlipayEnabled    bool   `json:"gopay_alipay_enabled"`
+	GoPayAlipayAppID      string `json:"gopay_alipay_app_id"`
+	GoPayAlipayPrivateKey string `json:"gopay_alipay_private_key"`
+	GoPayAlipayPublicKey  string `json:"gopay_alipay_public_key"`
+	GoPayAlipaySandbox    bool   `json:"gopay_alipay_sandbox"`
+
+	GoPayWeChatEnabled        bool   `json:"gopay_wechat_enabled"`
+	GoPayWeChatAppID          string `json:"gopay_wechat_app_id"`
+	GoPayWeChatMchID          string `json:"gopay_wechat_mch_id"`
+	GoPayWeChatSerialNo       string `json:"gopay_wechat_serial_no"`
+	GoPayWeChatAPIv3Key       string `json:"gopay_wechat_api_v3_key"`
+	GoPayWeChatPrivateKey     string `json:"gopay_wechat_private_key"`
+	GoPayWeChatPlatformCert   string `json:"gopay_wechat_platform_cert"`
+	GoPayWeChatPlatformSerial string `json:"gopay_wechat_platform_serial"`
+
 	CorporatePaymentEnabled       bool     `json:"corporate_payment_enabled"`
 	CorporatePaymentName          string   `json:"corporate_payment_name"`
 	CorporatePaymentBank          string   `json:"corporate_payment_bank"`

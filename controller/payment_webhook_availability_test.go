@@ -167,3 +167,45 @@ func TestEpayWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 	operation_setting.PayMethods = nil
 	require.False(t, isEpayWebhookEnabled())
 }
+
+func TestGoPayAlipayEnabledRequiresCompleteConfig(t *testing.T) {
+	confirmPaymentComplianceForTest(t)
+	payment := operation_setting.GetPaymentSetting()
+	original := *payment
+	t.Cleanup(func() { *payment = original })
+
+	payment.GoPayAlipayEnabled = true
+	payment.GoPayAlipayAppID = "app_id"
+	payment.GoPayAlipayPrivateKey = "private"
+	payment.GoPayAlipayPublicKey = ""
+	require.False(t, isGoPayAlipayEnabled())
+
+	payment.GoPayAlipayPublicKey = "public"
+	require.True(t, isGoPayAlipayEnabled())
+
+	payment.GoPayAlipayEnabled = false
+	require.False(t, isGoPayAlipayEnabled())
+}
+
+func TestGoPayWeChatEnabledRequiresCompleteConfig(t *testing.T) {
+	confirmPaymentComplianceForTest(t)
+	payment := operation_setting.GetPaymentSetting()
+	original := *payment
+	t.Cleanup(func() { *payment = original })
+
+	payment.GoPayWeChatEnabled = true
+	payment.GoPayWeChatAppID = "app_id"
+	payment.GoPayWeChatMchID = "mch_id"
+	payment.GoPayWeChatSerialNo = "merchant_serial"
+	payment.GoPayWeChatAPIv3Key = "api_v3_key"
+	payment.GoPayWeChatPrivateKey = "private"
+	payment.GoPayWeChatPlatformCert = "platform_cert"
+	payment.GoPayWeChatPlatformSerial = ""
+	require.False(t, isGoPayWeChatEnabled())
+
+	payment.GoPayWeChatPlatformSerial = "platform_serial"
+	require.True(t, isGoPayWeChatEnabled())
+
+	payment.GoPayWeChatAPIv3Key = ""
+	require.False(t, isGoPayWeChatEnabled())
+}

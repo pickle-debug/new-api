@@ -31,6 +31,7 @@ import { BillingHistoryDialog } from './components/dialogs/billing-history-dialo
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
 import { TransferDialog } from './components/dialogs/transfer-dialog'
+import { WeChatPayDialog } from './components/dialogs/wechat-pay-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
 import { SubscriptionPlansCard } from './components/subscription-plans-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
@@ -97,6 +98,8 @@ export function Wallet(props: WalletProps) {
     processing,
     calculatePaymentAmount,
     processPayment,
+    wechatCodeUrl,
+    clearWechatCodeUrl,
   } = usePayment()
   const {
     affiliateLink,
@@ -370,6 +373,12 @@ export function Wallet(props: WalletProps) {
         open={billingDialogOpen}
         onOpenChange={setBillingDialogOpen}
         onOrderCompleted={fetchUser}
+      />
+      <WeChatPayDialog
+        codeUrl={wechatCodeUrl}
+        onOpenChange={(open) => {
+          if (!open) clearWechatCodeUrl()
+        }}
       />
 
       <CreemConfirmDialog

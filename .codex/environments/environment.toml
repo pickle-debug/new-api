@@ -6,6 +6,11 @@ name = "new-api"
 script = ""
 
 [[actions]]
-name = "docker build local"
-icon = "run"
+name = "本地docker运行"
+icon = "tool"
 command = "docker compose -f docker-compose.dev.yml up -d --build"
+
+[[actions]]
+name = "前端运行"
+icon = "run"
+command = "cd web/default && bun run dev"

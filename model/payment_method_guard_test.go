@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -138,6 +139,64 @@ func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentProvider(t *testing.T)
 			assert.Equal(t, common.TopUpStatusPending, getTopUpStatusForPaymentGuardTest(t, tc.tradeNo))
 		})
 	}
+}
+
+func TestCompleteGoPayTopUpRejectsCrossGatewayProvider(t *testing.T) {
+	err := CompleteGoPayTopUp(
+		"cross-gateway",
+		PaymentProviderStripe,
+		PaymentMethodGoPayAlipay,
+		100,
+		"127.0.0.1",
+	)
+	require.ErrorIs(t, err, ErrPaymentMethodMismatch)
+}
+
+func TestCompleteGoPayTopUpSettlesOnceAndValidatesAmount(t *testing.T) {
+	truncateTables(t)
+	insertUserForPaymentGuardTest(t, 151, 0)
+	topUp := &TopUp{
+		UserId:          151,
+		Amount:          2,
+		Money:           14.60,
+		TradeNo:         "gopay-settlement",
+		PaymentMethod:   PaymentMethodGoPayAlipay,
+		PaymentProvider: PaymentProviderGoPayAlipay,
+		Status:          common.TopUpStatusPending,
+		CreateTime:      time.Now().Unix(),
+	}
+	require.NoError(t, topUp.Insert())
+
+	err := CompleteGoPayTopUp(
+		topUp.TradeNo,
+		PaymentProviderGoPayAlipay,
+		PaymentMethodGoPayAlipay,
+		1459,
+		"127.0.0.1",
+	)
+	require.ErrorContains(t, err, "payment amount mismatch")
+	assert.Equal(t, common.TopUpStatusPending, getTopUpStatusForPaymentGuardTest(t, topUp.TradeNo))
+	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 151))
+
+	require.NoError(t, CompleteGoPayTopUp(
+		topUp.TradeNo,
+		PaymentProviderGoPayAlipay,
+		PaymentMethodGoPayAlipay,
+		1460,
+		"127.0.0.1",
+	))
+	expectedQuota := common.QuotaFromDecimal(decimal.NewFromInt(2).Mul(decimal.NewFromFloat(common.QuotaPerUnit)))
+	assert.Equal(t, common.TopUpStatusSuccess, getTopUpStatusForPaymentGuardTest(t, topUp.TradeNo))
+	assert.Equal(t, expectedQuota, getUserQuotaForPaymentGuardTest(t, 151))
+
+	require.NoError(t, CompleteGoPayTopUp(
+		topUp.TradeNo,
+		PaymentProviderGoPayAlipay,
+		PaymentMethodGoPayAlipay,
+		1460,
+		"127.0.0.1",
+	))
+	assert.Equal(t, expectedQuota, getUserQuotaForPaymentGuardTest(t, 151))
 }
 
 func TestRejectCorporateTopUpStoresReasonWithoutCreditingQuota(t *testing.T) {

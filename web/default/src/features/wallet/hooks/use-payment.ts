@@ -25,11 +25,13 @@ import {
   calculateStripeAmount,
   calculateWaffoPancakeAmount,
   requestPayment,
+  requestGoPayPayment,
   requestStripePayment,
   isApiSuccess,
 } from '../api'
 import {
   isStripePayment,
+  isGoPayPayment,
   isWaffoPancakePayment,
   submitPaymentForm,
 } from '../lib'
@@ -42,6 +44,8 @@ export function usePayment() {
   const [amount, setAmount] = useState<number>(0)
   const [calculating, setCalculating] = useState(false)
   const [processing, setProcessing] = useState(false)
+  const [wechatCodeUrl, setWechatCodeUrl] = useState('')
+  const clearWechatCodeUrl = useCallback(() => setWechatCodeUrl(''), [])
 
   // Calculate payment amount
   const calculatePaymentAmount = useCallback(
@@ -51,14 +55,17 @@ export function usePayment() {
 
         const isStripe = isStripePayment(paymentType)
         const isPancake = isWaffoPancakePayment(paymentType)
-        const response = isStripe
-          ? await calculateStripeAmount({ amount: topupAmount })
-          : isPancake
-            ? await calculateWaffoPancakeAmount({ amount: topupAmount })
-            : await calculateAmount({ amount: topupAmount })
+        let response
+        if (isStripe) {
+          response = await calculateStripeAmount({ amount: topupAmount })
+        } else if (isPancake) {
+          response = await calculateWaffoPancakeAmount({ amount: topupAmount })
+        } else {
+          response = await calculateAmount({ amount: topupAmount })
+        }
 
         if (isApiSuccess(response) && response.data) {
-          const calculatedAmount = parseFloat(response.data)
+          const calculatedAmount = Number.parseFloat(response.data)
           setAmount(calculatedAmount)
           return calculatedAmount
         }
@@ -66,7 +73,7 @@ export function usePayment() {
         // Don't show error for calculation, just set to 0
         setAmount(0)
         return 0
-      } catch (_error) {
+      } catch {
         setAmount(0)
         return 0
       } finally {
@@ -83,17 +90,26 @@ export function usePayment() {
         setProcessing(true)
 
         const isStripe = isStripePayment(paymentType)
+        const isGoPay = isGoPayPayment(paymentType)
         const amount = Math.floor(topupAmount)
 
-        const response = isStripe
-          ? await requestStripePayment({
-              amount,
-              payment_method: 'stripe',
-            })
-          : await requestPayment({
-              amount,
-              payment_method: paymentType,
-            })
+        let response
+        if (isStripe) {
+          response = await requestStripePayment({
+            amount,
+            payment_method: 'stripe',
+          })
+        } else if (isGoPay) {
+          response = await requestGoPayPayment({
+            amount,
+            payment_method: paymentType,
+          })
+        } else {
+          response = await requestPayment({
+            amount,
+            payment_method: paymentType,
+          })
+        }
 
         if (!isApiSuccess(response)) {
           toast.error(response.message || i18next.t('Payment request failed'))
@@ -101,10 +117,29 @@ export function usePayment() {
         }
 
         // Handle Stripe payment
-        if (isStripe && response.data?.pay_link) {
-          window.open(response.data.pay_link as string, '_blank')
+        if (isStripe) {
+          const payLink = (response.data as { pay_link?: string } | undefined)
+            ?.pay_link
+          if (!payLink) return false
+          window.open(payLink, '_blank')
           toast.success(i18next.t('Redirecting to payment page...'))
           return true
+        }
+
+        if (isGoPay) {
+          const goPayData = response.data as
+            | { pay_url?: string; code_url?: string }
+            | undefined
+          if (goPayData?.pay_url) {
+            window.open(goPayData.pay_url, '_blank')
+            toast.success(i18next.t('Redirecting to payment page...'))
+            return true
+          }
+          if (goPayData?.code_url) {
+            setWechatCodeUrl(goPayData.code_url)
+            return true
+          }
+          return false
         }
 
         // Handle non-Stripe payment
@@ -118,7 +153,7 @@ export function usePayment() {
         }
 
         return false
-      } catch (_error) {
+      } catch {
         toast.error(i18next.t('Payment request failed'))
         return false
       } finally {
@@ -134,6 +169,8 @@ export function usePayment() {
     processing,
     calculatePaymentAmount,
     processPayment,
+    wechatCodeUrl,
+    clearWechatCodeUrl,
     setAmount,
   }
 }

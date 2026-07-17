@@ -42,6 +42,8 @@ const (
 	PaymentMethodWaffoPancake = "waffo_pancake"
 	PaymentMethodBalance      = "balance"
 	PaymentMethodCorporate    = "corporate"
+	PaymentMethodGoPayAlipay  = "gopay_alipay"
+	PaymentMethodGoPayWeChat  = "gopay_wechat"
 )
 
 const (
@@ -52,6 +54,8 @@ const (
 	PaymentProviderWaffoPancake = "waffo_pancake"
 	PaymentProviderBalance      = "balance"
 	PaymentProviderCorporate    = "corporate"
+	PaymentProviderGoPayAlipay  = "gopay_alipay"
+	PaymentProviderGoPayWeChat  = "gopay_wechat"
 )
 
 var (
@@ -117,6 +121,76 @@ func UpdatePendingTopUpStatus(tradeNo string, expectedPaymentProvider string, ta
 		topUp.Status = targetStatus
 		return tx.Save(topUp).Error
 	})
+}
+
+// CompleteGoPayTopUp atomically verifies and settles an official Alipay or WeChat Pay order.
+func CompleteGoPayTopUp(tradeNo string, expectedProvider string, expectedMethod string, paidCents int64, callerIP string) error {
+	if tradeNo == "" || paidCents <= 0 {
+		return errors.New("invalid payment notification")
+	}
+	if (expectedProvider != PaymentProviderGoPayAlipay || expectedMethod != PaymentMethodGoPayAlipay) &&
+		(expectedProvider != PaymentProviderGoPayWeChat || expectedMethod != PaymentMethodGoPayWeChat) {
+		return ErrPaymentMethodMismatch
+	}
+
+	refCol := "`trade_no`"
+	if common.UsingMainDatabase(common.DatabaseTypePostgreSQL) {
+		refCol = `"trade_no"`
+	}
+
+	var topUp TopUp
+	var quotaToAdd int
+	alreadyCompleted := false
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		if err := lockForUpdate(tx).Where(refCol+" = ?", tradeNo).First(&topUp).Error; err != nil {
+			return ErrTopUpNotFound
+		}
+		if topUp.PaymentProvider != expectedProvider || topUp.PaymentMethod != expectedMethod {
+			return ErrPaymentMethodMismatch
+		}
+		if topUp.Status == common.TopUpStatusSuccess {
+			alreadyCompleted = true
+			return nil
+		}
+		if topUp.Status != common.TopUpStatusPending {
+			return ErrTopUpStatusInvalid
+		}
+
+		expectedCents := decimal.NewFromFloat(topUp.Money).Mul(decimal.NewFromInt(100)).Round(0).IntPart()
+		if expectedCents != paidCents {
+			return errors.New("payment amount mismatch")
+		}
+		var clamp *common.QuotaClamp
+		quotaToAdd, clamp = common.QuotaFromDecimalChecked(
+			decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)),
+		)
+		if clamp != nil || quotaToAdd <= 0 {
+			return errors.New("topup quota out of range")
+		}
+
+		topUp.Status = common.TopUpStatusSuccess
+		topUp.CompleteTime = common.GetTimestamp()
+		if err := tx.Save(&topUp).Error; err != nil {
+			return err
+		}
+		return tx.Model(&User{}).Where("id = ?", topUp.UserId).
+			Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error
+	})
+	if err != nil || alreadyCompleted {
+		return err
+	}
+
+	if err := InvalidateUserCache(topUp.UserId); err != nil {
+		common.SysLog("failed to invalidate user cache after go-pay topup: " + err.Error())
+	}
+	RecordTopupLog(
+		topUp.UserId,
+		fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", logger.FormatQuota(quotaToAdd), topUp.Money),
+		callerIP,
+		topUp.PaymentMethod,
+		expectedProvider,
+	)
+	return nil
 }
 
 func Recharge(referenceId string, customerId string, callerIp string) (err error) {

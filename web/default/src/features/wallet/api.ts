@@ -28,6 +28,7 @@ import type {
   RedemptionResponse,
   AmountResponse,
   PaymentResponse,
+  GoPayPaymentResponse,
   StripePaymentResponse,
   AffiliateCodeResponse,
   AffiliateTransferResponse,
@@ -110,6 +111,15 @@ export async function requestPayment(
     ...res.data,
     url: res.data.url || (res as unknown as { url?: string }).url,
   }
+}
+
+export async function requestGoPayPayment(
+  request: PaymentRequest
+): Promise<GoPayPaymentResponse> {
+  const res = await api.post('/api/user/gopay/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
 }
 
 /**

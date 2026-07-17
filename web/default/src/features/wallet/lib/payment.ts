@@ -75,6 +75,13 @@ export function isStripePayment(paymentType: string): boolean {
   return paymentType === PAYMENT_TYPES.STRIPE
 }
 
+export function isGoPayPayment(paymentType: string): boolean {
+  return (
+    paymentType === PAYMENT_TYPES.GOPAY_ALIPAY ||
+    paymentType === PAYMENT_TYPES.GOPAY_WECHAT
+  )
+}
+
 /**
  * Check if payment method is Waffo Pancake
  *
@@ -127,6 +134,13 @@ export function getMinTopupAmount(topupInfo: TopupInfo | null): number {
   }
 
   if (topupInfo.enable_online_topup) {
+    return topupInfo.min_topup
+  }
+
+  if (
+    topupInfo.enable_gopay_alipay_topup ||
+    topupInfo.enable_gopay_wechat_topup
+  ) {
     return topupInfo.min_topup
   }
 

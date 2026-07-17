@@ -288,6 +288,19 @@ export type BillingSettings = {
   PayMethods: string
   'payment_setting.amount_options': string
   'payment_setting.amount_discount': string
+  'payment_setting.gopay_alipay_enabled': boolean
+  'payment_setting.gopay_alipay_app_id': string
+  'payment_setting.gopay_alipay_private_key': string
+  'payment_setting.gopay_alipay_public_key': string
+  'payment_setting.gopay_alipay_sandbox': boolean
+  'payment_setting.gopay_wechat_enabled': boolean
+  'payment_setting.gopay_wechat_app_id': string
+  'payment_setting.gopay_wechat_mch_id': string
+  'payment_setting.gopay_wechat_serial_no': string
+  'payment_setting.gopay_wechat_api_v3_key': string
+  'payment_setting.gopay_wechat_private_key': string
+  'payment_setting.gopay_wechat_platform_cert': string
+  'payment_setting.gopay_wechat_platform_serial': string
   'payment_setting.corporate_payment_enabled': boolean
   'payment_setting.corporate_payment_name': string
   'payment_setting.corporate_payment_bank': string
