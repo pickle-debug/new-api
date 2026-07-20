@@ -10,6 +10,16 @@ function stableStringify(obj) {
 const key =
   'Please complete the bank transfer first, then upload a clear transfer receipt. The balance will be credited after manual review.'
 
+const excludeAdministratorsTranslations = {
+  en: 'Exclude administrators',
+  zh: '排除管理员',
+  'zh-TW': '排除管理員',
+  fr: 'Exclure les administrateurs',
+  ja: '管理者を除外',
+  ru: 'Исключить администраторов',
+  vi: 'Loại trừ quản trị viên',
+}
+
 const commonTranslations = {
   en: {
     Rejected: 'Rejected',
@@ -490,6 +500,12 @@ const goPayTranslations = {
 
 for (const [locale, translations] of Object.entries(goPayTranslations)) {
   Object.assign(newKeys[locale], translations)
+}
+
+for (const [locale, translation] of Object.entries(
+  excludeAdministratorsTranslations
+)) {
+  newKeys[locale]['Exclude administrators'] = translation
 }
 
 async function main() {

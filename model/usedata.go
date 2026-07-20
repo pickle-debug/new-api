@@ -170,14 +170,29 @@ func GetQuotaDataGroupByUser(startTime int64, endTime int64) (quotaData []*Quota
 	return quotaDatas, err
 }
 
-func GetAllQuotaDates(startTime int64, endTime int64, username string) (quotaData []*QuotaData, err error) {
-	if username != "" {
+func GetAllQuotaDates(startTime int64, endTime int64, username string, excludeAdmins bool) (quotaData []*QuotaData, err error) {
+	if username != "" && !excludeAdmins {
 		return GetQuotaDataByUsername(username, startTime, endTime)
 	}
 	var quotaDatas []*QuotaData
 	// 从quota_data表中查询数据
 	// only select model_name, sum(count) as count, sum(quota) as quota, model_name, created_at from quota_data group by model_name, created_at;
 	//err = DB.Table("quota_data").Where("created_at >= ? and created_at <= ?", startTime, endTime).Find(&quotaDatas).Error
-	err = DB.Table("quota_data").Select("model_name, sum(count) as count, sum(quota) as quota, sum(token_used) as token_used, created_at").Where("created_at >= ? and created_at <= ?", startTime, endTime).Group("model_name, created_at").Find(&quotaDatas).Error
+	query := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(quota) as quota, sum(token_used) as token_used, created_at").
+		Where("created_at >= ? and created_at <= ?", startTime, endTime)
+	if username != "" {
+		query = query.Where("username = ?", username)
+	}
+	if excludeAdmins {
+		adminUserIds, adminErr := getAdminUserIds()
+		if adminErr != nil {
+			return nil, adminErr
+		}
+		if len(adminUserIds) > 0 {
+			query = query.Where("user_id NOT IN ?", adminUserIds)
+		}
+	}
+	err = query.Group("model_name, created_at").Find(&quotaDatas).Error
 	return quotaDatas, err
 }

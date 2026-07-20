@@ -465,7 +465,7 @@ func RecordTaskBillingLog(params RecordTaskBillingLogParams) {
 	}
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string, excludeAdmins bool) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB
@@ -499,6 +499,15 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 	if group != "" {
 		tx = tx.Where("logs."+logGroupCol+" = ?", group)
+	}
+	if excludeAdmins {
+		adminUserIds, adminErr := getAdminUserIds()
+		if adminErr != nil {
+			return nil, 0, adminErr
+		}
+		if len(adminUserIds) > 0 {
+			tx = tx.Where("logs.user_id NOT IN ?", adminUserIds)
+		}
 	}
 	err = tx.Model(&Log{}).Count(&total).Error
 	if err != nil {
@@ -615,7 +624,7 @@ type Stat struct {
 	Tpm   int `json:"tpm"`
 }
 
-func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {
+func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string, excludeAdmins bool) (stat Stat, err error) {
 	tx := LOG_DB.Table("logs").Select("COALESCE(sum(quota), 0) quota")
 
 	// 为rpm和tpm创建单独的查询
@@ -651,6 +660,16 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 		tx = tx.Where(logGroupCol+" = ?", group)
 		rpmTpmQuery = rpmTpmQuery.Where(logGroupCol+" = ?", group)
 	}
+	if excludeAdmins {
+		adminUserIds, adminErr := getAdminUserIds()
+		if adminErr != nil {
+			return stat, adminErr
+		}
+		if len(adminUserIds) > 0 {
+			tx = tx.Where("user_id NOT IN ?", adminUserIds)
+			rpmTpmQuery = rpmTpmQuery.Where("user_id NOT IN ?", adminUserIds)
+		}
+	}
 
 	tx = tx.Where("type = ?", LogTypeConsume)
 	rpmTpmQuery = rpmTpmQuery.Where("type = ?", LogTypeConsume)
@@ -669,6 +688,14 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	}
 
 	return stat, nil
+}
+
+func getAdminUserIds() ([]int, error) {
+	var userIds []int
+	err := DB.Unscoped().Model(&User{}).
+		Where("role IN ?", []int{common.RoleAdminUser, common.RoleRootUser}).
+		Pluck("id", &userIds).Error
+	return userIds, err
 }
 
 func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string) (token int) {

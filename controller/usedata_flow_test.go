@@ -21,6 +21,10 @@ func setupFlowControllerTestDB(t *testing.T) {
 	t.Helper()
 	db := setupModelListControllerTestDB(t)
 	require.NoError(t, db.AutoMigrate(&model.Token{}, &model.QuotaData{}))
+	require.NoError(t, model.DB.Create(&[]model.User{
+		{Id: 1, Username: "alice", Role: common.RoleCommonUser, AffCode: "alice-flow"},
+		{Id: 2, Username: "bob", Role: common.RoleAdminUser, AffCode: "bob-flow"},
+	}).Error)
 	require.NoError(t, model.DB.Create(&model.Channel{Id: 1, Name: "east"}).Error)
 	require.NoError(t, model.DB.Create(&model.Token{Id: 11, UserId: 1, Key: "sk-primary", Name: "primary"}).Error)
 	require.NoError(t, model.DB.Create(&model.Token{Id: 22, UserId: 2, Key: "sk-backup", Name: "backup"}).Error)
@@ -97,6 +101,21 @@ func TestGetAllFlowQuotaDatesUsesRootDimensions(t *testing.T) {
 	require.Equal(t, "primary", payload.Data[0].TokenName)
 	require.Equal(t, "default", payload.Data[0].UseGroup)
 	require.Equal(t, "east", payload.Data[0].ChannelName)
+}
+
+func TestGetAllFlowQuotaDatesExcludesAdministrators(t *testing.T) {
+	setupFlowControllerTestDB(t)
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Set("role", common.RoleRootUser)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/data/flow?start_timestamp=1000&end_timestamp=2000&exclude_admins=true", nil)
+
+	GetAllFlowQuotaDates(ctx)
+
+	payload := decodeFlowQuotaResponse(t, recorder)
+	require.Len(t, payload.Data, 1)
+	require.Equal(t, "alice", payload.Data[0].Username)
 }
 
 func TestGetUserFlowQuotaDatesRestrictsToAuthenticatedUser(t *testing.T) {

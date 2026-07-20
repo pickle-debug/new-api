@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   TIME_GRANULARITY_OPTIONS,
   TIME_RANGE_PRESETS,
@@ -147,11 +148,12 @@ export function ModelsFilter(props: ModelsFilterProps) {
 
   const handleChange = (
     field: keyof DashboardFilters,
-    value: Date | string | undefined
+    value: Date | string | boolean | undefined
   ) => {
     setFilters((prev) => ({ ...prev, [field]: value }))
-    if (field === 'start_timestamp' || field === 'end_timestamp')
+    if (field === 'start_timestamp' || field === 'end_timestamp') {
       setSelectedRange(null)
+    }
   }
 
   const handleQuickRange = (days: number) => {
@@ -257,12 +259,10 @@ export function ModelsFilter(props: ModelsFilterProps) {
           <div className='grid gap-2'>
             <Label htmlFor='time_granularity'>{t('Time Granularity')}</Label>
             <Select
-              items={[
-                ...TIME_GRANULARITY_OPTIONS.map((option) => ({
-                  value: option.value,
-                  label: t(option.label),
-                })),
-              ]}
+              items={TIME_GRANULARITY_OPTIONS.map((option) => ({
+                value: option.value,
+                label: t(option.label),
+              }))}
               value={filters.time_granularity}
               onValueChange={(value) =>
                 handleChange('time_granularity', value as TimeGranularity)
@@ -295,6 +295,20 @@ export function ModelsFilter(props: ModelsFilterProps) {
                   placeholder={t('Filter by username')}
                   value={filters.username}
                   onChange={(e) => handleChange('username', e.target.value)}
+                />
+              </div>
+
+              <div className='flex items-center justify-between gap-4'>
+                <Label htmlFor='exclude_admins' className='cursor-pointer'>
+                  {t('Exclude administrators')}
+                </Label>
+                <Switch
+                  id='exclude_admins'
+                  checked={Boolean(filters.exclude_admins)}
+                  onCheckedChange={(checked) =>
+                    handleChange('exclude_admins', checked)
+                  }
+                  aria-label={t('Exclude administrators')}
                 />
               </div>
             </>

@@ -24,6 +24,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -193,12 +194,13 @@ export function CommonLogsFilterBar<TData>(
       search: {
         ...filterParams,
         type: [logType],
+        excludeAdmins: searchParams.excludeAdmins || undefined,
         page: 1,
       },
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
-  }, [filters, logType, navigate, queryClient])
+  }, [filters, logType, navigate, queryClient, searchParams.excludeAdmins])
 
   const handleReset = useCallback(() => {
     const { start, end } = getDefaultTimeRange()
@@ -225,6 +227,21 @@ export function CommonLogsFilterBar<TData>(
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
   }, [navigate, queryClient])
+
+  const handleExcludeAdminsChange = useCallback(
+    (checked: boolean) => {
+      navigate({
+        to: '/usage-logs/$section',
+        params: { section: 'common' },
+        search: (previous) => ({
+          ...previous,
+          excludeAdmins: checked || undefined,
+          page: 1,
+        }),
+      })
+    },
+    [navigate]
+  )
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -287,6 +304,22 @@ export function CommonLogsFilterBar<TData>(
         {sensitiveVisible ? t('Hide') : t('Show')}
       </TooltipContent>
     </Tooltip>
+  )
+  const toolbarActions = (
+    <>
+      {isAdmin && (
+        <label className='text-muted-foreground flex cursor-pointer items-center gap-2 text-xs'>
+          <Switch
+            size='sm'
+            checked={searchParams.excludeAdmins}
+            onCheckedChange={handleExcludeAdminsChange}
+            aria-label={t('Exclude administrators')}
+          />
+          <span>{t('Exclude administrators')}</span>
+        </label>
+      )}
+      {sensitiveToggle}
+    </>
   )
 
   const dateRangeFilter = (
@@ -413,7 +446,7 @@ export function CommonLogsFilterBar<TData>(
     <LogsFilterToolbar
       table={props.table}
       stats={statsBar}
-      actionStart={sensitiveToggle}
+      actionStart={toolbarActions}
       primaryFilters={
         <>
           {dateRangeFilter}
@@ -433,12 +466,19 @@ export function CommonLogsFilterBar<TData>(
         </>
       }
       mobileFilterCount={
-        [filters.model, filters.group, hasTypeFilter].filter(Boolean).length +
+        [
+          filters.model,
+          filters.group,
+          hasTypeFilter,
+          searchParams.excludeAdmins,
+        ].filter(Boolean).length +
         expandedFilterCount
       }
       hasAdvancedActiveFilters={hasExpandedFilters}
       advancedFilterCount={expandedFilterCount}
-      hasActiveFilters={hasAdditionalFilters}
+      hasActiveFilters={
+        hasAdditionalFilters || Boolean(searchParams.excludeAdmins)
+      }
       onSearch={handleApply}
       searchLoading={fetchingLogs > 0}
       onReset={handleReset}
