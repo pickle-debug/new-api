@@ -38,6 +38,7 @@ export interface Model {
   model_name: string
   description?: string
   icon?: string
+  price_unit?: 'request' | 'second'
   tags?: string
   vendor_id?: number
   endpoints?: string
@@ -232,6 +233,7 @@ export const modelFormSchema = z.object({
   model_name: z.string().min(1, 'Model name is required'),
   description: z.string().default(''),
   icon: z.string().default(''),
+  price_unit: z.enum(['request', 'second']).default('request'),
   tags: z.array(z.string()).default([]),
   vendor_id: z.number().optional(),
   endpoints: z.string().default(''),

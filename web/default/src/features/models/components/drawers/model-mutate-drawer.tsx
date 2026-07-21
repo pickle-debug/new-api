@@ -92,6 +92,7 @@ const extendedModelFormSchema = z.object({
   model_name: z.string().min(1, 'Model name is required'),
   description: z.string(),
   icon: z.string(),
+  price_unit: z.enum(['request', 'second']),
   tags: z.array(z.string()),
   vendor_id: z.number().optional(),
   endpoints: z.string(),
@@ -231,6 +232,7 @@ export function ModelMutateDrawer({
       model_name: '',
       description: '',
       icon: '',
+      price_unit: 'request',
       tags: [],
       vendor_id: undefined,
       endpoints: '',
@@ -291,6 +293,7 @@ export function ModelMutateDrawer({
         model_name: model.model_name,
         description: model.description || '',
         icon: model.icon || '',
+        price_unit: model.price_unit === 'second' ? 'second' : 'request',
         tags: parseModelTags(model.tags),
         vendor_id: model.vendor_id,
         endpoints: model.endpoints || '',
@@ -395,6 +398,7 @@ export function ModelMutateDrawer({
         model_name: currentRow?.model_name || '',
         description: '',
         icon: '',
+        price_unit: 'request',
         tags: [],
         vendor_id: undefined,
         endpoints: '',
@@ -784,6 +788,44 @@ export function ModelMutateDrawer({
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='price_unit'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Billing unit')}</FormLabel>
+                    <Select
+                      items={[
+                        { value: 'request', label: t('Per request') },
+                        { value: 'second', label: t('Per second') },
+                      ]}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className='w-full'>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent alignItemWithTrigger={false}>
+                        <SelectGroup>
+                          <SelectItem value='request'>
+                            {t('Per request')}
+                          </SelectItem>
+                          <SelectItem value='second'>
+                            {t('Per second')}
+                          </SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {t('Only applies to fixed-price models.')}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

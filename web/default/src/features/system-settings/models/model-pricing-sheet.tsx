@@ -30,6 +30,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
+import { TagInput } from '@/components/tag-input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -54,6 +55,14 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group'
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -61,6 +70,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
 import {
@@ -91,6 +103,7 @@ type ModelPricingSheetProps = {
   editData?: ModelRatioData | null
   onSave?: () => void | Promise<void>
   isSaving?: boolean
+  iconOptions?: string[]
 }
 
 type ModelPricingEditorPanelProps = Omit<
@@ -108,7 +121,7 @@ export const ModelPricingSheet = forwardRef<
   ModelPricingEditorPanelHandle,
   ModelPricingSheetProps
 >(function ModelPricingSheet(
-  { open, onOpenChange, editData, onSave, isSaving },
+  { open, onOpenChange, editData, onSave, isSaving, iconOptions },
   ref
 ) {
   const { t } = useTranslation()
@@ -130,6 +143,7 @@ export const ModelPricingSheet = forwardRef<
           editData={editData}
           onSave={onSave}
           isSaving={isSaving}
+          iconOptions={iconOptions}
           className='h-full rounded-none border-0'
         />
       </SheetContent>
@@ -141,7 +155,7 @@ export const ModelPricingEditorPanel = forwardRef<
   ModelPricingEditorPanelHandle,
   ModelPricingEditorPanelProps
 >(function ModelPricingEditorPanel(
-  { editData, className, onSave, isSaving },
+  { editData, className, onSave, isSaving, iconOptions },
   ref
 ) {
   const { t } = useTranslation()
@@ -157,11 +171,27 @@ export const ModelPricingEditorPanel = forwardRef<
   const [requestRuleExpr, setRequestRuleExpr] = useState('')
   const [editorReloadToken, setEditorReloadToken] = useState(0)
   const isEditMode = !!editData
+  const iconItems = useMemo(() => {
+    const values = new Set(iconOptions ?? [])
+    if (editData?.icon) values.add(editData.icon)
+
+    return [
+      { value: '__none__', label: t('No icon') },
+      ...[...values]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b))
+        .map((value) => ({ value, label: value })),
+    ]
+  }, [editData?.icon, iconOptions, t])
 
   const form = useForm<ModelPricingFormValues>({
     resolver: zodResolver(createModelPricingSchema(t)),
     defaultValues: {
       name: '',
+      description: '',
+      icon: '',
+      sources: [],
+      priceUnit: 'request',
       price: '',
       ratio: '',
       cacheRatio: '',
@@ -179,6 +209,10 @@ export const ModelPricingEditorPanel = forwardRef<
     if (editData) {
       form.reset({
         name: editData.name,
+        description: editData.description || '',
+        icon: editData.icon || '',
+        sources: editData.sources || [],
+        priceUnit: editData.priceUnit === 'second' ? 'second' : 'request',
         price: editData.price || '',
         ratio: editData.ratio || '',
         cacheRatio: editData.cacheRatio || '',
@@ -188,18 +222,22 @@ export const ModelPricingEditorPanel = forwardRef<
         audioRatio: editData.audioRatio || '',
         audioCompletionRatio: editData.audioCompletionRatio || '',
       })
-      setPricingMode(
-        editData.billingMode === 'tiered_expr'
-          ? 'tiered_expr'
-          : editData.price
-            ? 'per-request'
-            : 'per-token'
-      )
+      let nextPricingMode: PricingMode = 'per-token'
+      if (editData.billingMode === 'tiered_expr') {
+        nextPricingMode = 'tiered_expr'
+      } else if (editData.price) {
+        nextPricingMode = 'per-request'
+      }
+      setPricingMode(nextPricingMode)
       setBillingExpr(editData.billingExpr || '')
       setRequestRuleExpr(editData.requestRuleExpr || '')
     } else {
       form.reset({
         name: '',
+        description: '',
+        icon: '',
+        sources: [],
+        priceUnit: 'request',
         price: '',
         ratio: '',
         cacheRatio: '',
@@ -442,6 +480,10 @@ export const ModelPricingEditorPanel = forwardRef<
     (values: ModelPricingFormValues) => {
       const data: ModelRatioData = {
         name: values.name.trim(),
+        description: values.description?.trim() || '',
+        icon: values.icon || '',
+        sources: values.sources || [],
+        priceUnit: values.priceUnit,
         billingMode: pricingMode,
         price: values.price || '',
         ratio: values.ratio || '',
@@ -539,6 +581,99 @@ export const ModelPricingEditorPanel = forwardRef<
                   )}
                 />
 
+                <div className='grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.7fr)]'>
+                  <FormField
+                    control={form.control}
+                    name='description'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Model description')}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={3}
+                            placeholder={t(
+                              'Describe the model capabilities and intended use.'
+                            )}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t('Shown on the public model catalog.')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='icon'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Model icon')}</FormLabel>
+                        <Select
+                          items={iconItems}
+                          value={field.value || '__none__'}
+                          onValueChange={(value) =>
+                            field.onChange(value === '__none__' ? '' : value)
+                          }
+                        >
+                          <FormControl>
+                            <SelectTrigger className='w-full'>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent alignItemWithTrigger={false}>
+                            <SelectGroup>
+                              {iconItems.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                  {item.value === '__none__' ? (
+                                    <span className='bg-muted text-muted-foreground flex size-5 items-center justify-center rounded text-xs'>
+                                      -
+                                    </span>
+                                  ) : (
+                                    getLobeIcon(item.value, 20)
+                                  )}
+                                  <span>{item.label}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          {t(
+                            'Choose from icons already used by your model library.'
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='sources'
+                    render={({ field }) => (
+                      <FormItem className='sm:col-span-2'>
+                        <FormLabel>{t('Sources')}</FormLabel>
+                        <FormControl>
+                          <TagInput
+                            value={field.value || []}
+                            onChange={field.onChange}
+                            placeholder={t('Add a source...')}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            'Optional labels such as official, community, or provider.'
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <Tabs
                   value={pricingMode}
                   onValueChange={handleModeChange}
@@ -602,6 +737,50 @@ export const ModelPricingEditorPanel = forwardRef<
                     <FieldGroup className='gap-5'>
                       <FormField
                         control={form.control}
+                        name='priceUnit'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Billing unit')}</FormLabel>
+                            <ToggleGroup
+                              value={[field.value]}
+                              onValueChange={(values) => {
+                                const value = values[0]
+                                if (value === 'request' || value === 'second') {
+                                  field.onChange(value)
+                                }
+                              }}
+                              variant='outline'
+                              className='w-full'
+                            >
+                              <ToggleGroupItem
+                                value='request'
+                                className='flex-1'
+                              >
+                                {t('Per request')}
+                              </ToggleGroupItem>
+                              <ToggleGroupItem
+                                value='second'
+                                className='flex-1'
+                              >
+                                {t('Per second')}
+                              </ToggleGroupItem>
+                            </ToggleGroup>
+                            <FormDescription>
+                              {field.value === 'second'
+                                ? t(
+                                    'The fixed price is charged for each second.'
+                                  )
+                                : t(
+                                    'The fixed price is charged for each request.'
+                                  )}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name='price'
                         render={({ field }) => (
                           <FormItem className='contents'>
@@ -622,14 +801,18 @@ export const ModelPricingEditorPanel = forwardRef<
                                     }}
                                   />
                                   <InputGroupAddon align='inline-end'>
-                                    {t('per request')}
+                                    {watchedValues.priceUnit === 'second'
+                                      ? t('per second')
+                                      : t('per request')}
                                   </InputGroupAddon>
                                 </InputGroup>
                               </FormControl>
                               <FieldDescription>
-                                {t(
-                                  'Cost in USD per request, regardless of tokens used.'
-                                )}
+                                {watchedValues.priceUnit === 'second'
+                                  ? t('Cost in USD for each second of usage.')
+                                  : t(
+                                      'Cost in USD per request, regardless of tokens used.'
+                                    )}
                               </FieldDescription>
                               <FormMessage />
                             </Field>

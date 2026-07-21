@@ -508,6 +508,211 @@ for (const [locale, translation] of Object.entries(
   newKeys[locale]['Exclude administrators'] = translation
 }
 
+const modelCatalogTranslations = {
+  en: {
+    'Add a source...': 'Add a source...',
+    'Billing unit': 'Billing unit',
+    'Choose from icons already used by your model library.':
+      'Choose from icons already used by your model library.',
+    'Cost in USD for each second of usage.':
+      'Cost in USD for each second of usage.',
+    'Describe the model capabilities and intended use.':
+      'Describe the model capabilities and intended use.',
+    'Failed to save model metadata': 'Failed to save model metadata',
+    'Model description': 'Model description',
+    'Model icon': 'Model icon',
+    'No icon': 'No icon',
+    'Only applies to fixed-price models.':
+      'Only applies to fixed-price models.',
+    'Optional labels such as official, community, or provider.':
+      'Optional labels such as official, community, or provider.',
+    'Per Second': 'Per Second',
+    'Per second': 'Per second',
+    'Price per second': 'Price per second',
+    'Shown on the public model catalog.':
+      'Shown on the public model catalog.',
+    Sources: 'Sources',
+    'The fixed price is charged for each request.':
+      'The fixed price is charged for each request.',
+    'The fixed price is charged for each second.':
+      'The fixed price is charged for each second.',
+    'per second': 'per second',
+    second: 'second',
+  },
+  zh: {
+    'Add a source...': '添加来源...',
+    'Billing unit': '计费单位',
+    'Choose from icons already used by your model library.':
+      '从模型库已使用的图标中选择。',
+    'Cost in USD for each second of usage.': '每秒使用费用（美元）。',
+    'Describe the model capabilities and intended use.':
+      '描述模型能力和适用场景。',
+    'Failed to save model metadata': '保存模型信息失败',
+    'Model description': '模型描述',
+    'Model icon': '模型图标',
+    'No icon': '无图标',
+    'Only applies to fixed-price models.': '仅适用于固定价格模型。',
+    'Optional labels such as official, community, or provider.':
+      '可选标签，例如官方、社区或供应商。',
+    'Per Second': '按秒计费',
+    'Per second': '按秒',
+    'Price per second': '每秒价格',
+    'Shown on the public model catalog.': '显示在公开模型广场中。',
+    Sources: '来源',
+    'The fixed price is charged for each request.': '固定价格按每次请求收取。',
+    'The fixed price is charged for each second.': '固定价格按每秒收取。',
+    'per second': '每秒',
+    second: '秒',
+  },
+  'zh-TW': {
+    'Add a source...': '新增來源...',
+    'Billing unit': '計費單位',
+    'Choose from icons already used by your model library.':
+      '從模型庫已使用的圖示中選擇。',
+    'Cost in USD for each second of usage.': '每秒使用費用（美元）。',
+    'Describe the model capabilities and intended use.':
+      '描述模型能力和適用場景。',
+    'Failed to save model metadata': '儲存模型資訊失敗',
+    'Model description': '模型描述',
+    'Model icon': '模型圖示',
+    'No icon': '無圖示',
+    'Only applies to fixed-price models.': '僅適用於固定價格模型。',
+    'Optional labels such as official, community, or provider.':
+      '可選標籤，例如官方、社群或供應商。',
+    'Per Second': '按秒計費',
+    'Per second': '按秒',
+    'Price per second': '每秒價格',
+    'Shown on the public model catalog.': '顯示在公開模型廣場中。',
+    Sources: '來源',
+    'The fixed price is charged for each request.': '固定價格按每次請求收取。',
+    'The fixed price is charged for each second.': '固定價格按每秒收取。',
+    'per second': '每秒',
+    second: '秒',
+  },
+  fr: {
+    'Add a source...': 'Ajouter une source...',
+    'Billing unit': 'Unité de facturation',
+    'Choose from icons already used by your model library.':
+      'Choisissez parmi les icônes déjà utilisées dans votre bibliothèque.',
+    'Cost in USD for each second of usage.':
+      'Coût en USD pour chaque seconde d’utilisation.',
+    'Describe the model capabilities and intended use.':
+      'Décrivez les capacités et les usages prévus du modèle.',
+    'Failed to save model metadata':
+      'Échec de l’enregistrement des informations du modèle',
+    'Model description': 'Description du modèle',
+    'Model icon': 'Icône du modèle',
+    'No icon': 'Aucune icône',
+    'Only applies to fixed-price models.':
+      'S’applique uniquement aux modèles à prix fixe.',
+    'Optional labels such as official, community, or provider.':
+      'Libellés facultatifs, par exemple officiel, communauté ou fournisseur.',
+    'Per Second': 'Par seconde',
+    'Per second': 'Par seconde',
+    'Price per second': 'Prix par seconde',
+    'Shown on the public model catalog.':
+      'Affiché dans le catalogue public des modèles.',
+    Sources: 'Sources',
+    'The fixed price is charged for each request.':
+      'Le prix fixe est facturé pour chaque requête.',
+    'The fixed price is charged for each second.':
+      'Le prix fixe est facturé pour chaque seconde.',
+    'per second': 'par seconde',
+    second: 'seconde',
+  },
+  ja: {
+    'Add a source...': 'ソースを追加...',
+    'Billing unit': '課金単位',
+    'Choose from icons already used by your model library.':
+      'モデルライブラリで使用中のアイコンから選択します。',
+    'Cost in USD for each second of usage.': '1秒あたりの利用料金（USD）。',
+    'Describe the model capabilities and intended use.':
+      'モデルの機能と用途を説明します。',
+    'Failed to save model metadata': 'モデル情報の保存に失敗しました',
+    'Model description': 'モデルの説明',
+    'Model icon': 'モデルアイコン',
+    'No icon': 'アイコンなし',
+    'Only applies to fixed-price models.': '固定価格モデルにのみ適用されます。',
+    'Optional labels such as official, community, or provider.':
+      '公式、コミュニティ、プロバイダーなどの任意ラベル。',
+    'Per Second': '秒単位',
+    'Per second': '秒単位',
+    'Price per second': '1秒あたりの価格',
+    'Shown on the public model catalog.': '公開モデルカタログに表示されます。',
+    Sources: '提供元',
+    'The fixed price is charged for each request.':
+      '固定価格はリクエストごとに課金されます。',
+    'The fixed price is charged for each second.':
+      '固定価格は1秒ごとに課金されます。',
+    'per second': '秒あたり',
+    second: '秒',
+  },
+  ru: {
+    'Add a source...': 'Добавить источник...',
+    'Billing unit': 'Единица тарификации',
+    'Choose from icons already used by your model library.':
+      'Выберите значок из уже используемых в библиотеке моделей.',
+    'Cost in USD for each second of usage.':
+      'Стоимость в USD за каждую секунду использования.',
+    'Describe the model capabilities and intended use.':
+      'Опишите возможности и назначение модели.',
+    'Failed to save model metadata': 'Не удалось сохранить данные модели',
+    'Model description': 'Описание модели',
+    'Model icon': 'Значок модели',
+    'No icon': 'Без значка',
+    'Only applies to fixed-price models.':
+      'Применяется только к моделям с фиксированной ценой.',
+    'Optional labels such as official, community, or provider.':
+      'Необязательные метки: официальный, сообщество или поставщик.',
+    'Per Second': 'Посекундно',
+    'Per second': 'За секунду',
+    'Price per second': 'Цена за секунду',
+    'Shown on the public model catalog.':
+      'Отображается в общедоступном каталоге моделей.',
+    Sources: 'Источники',
+    'The fixed price is charged for each request.':
+      'Фиксированная цена взимается за каждый запрос.',
+    'The fixed price is charged for each second.':
+      'Фиксированная цена взимается за каждую секунду.',
+    'per second': 'за секунду',
+    second: 'секунда',
+  },
+  vi: {
+    'Add a source...': 'Thêm nguồn...',
+    'Billing unit': 'Đơn vị tính phí',
+    'Choose from icons already used by your model library.':
+      'Chọn từ các biểu tượng đã dùng trong thư viện mô hình.',
+    'Cost in USD for each second of usage.':
+      'Chi phí bằng USD cho mỗi giây sử dụng.',
+    'Describe the model capabilities and intended use.':
+      'Mô tả khả năng và mục đích sử dụng của mô hình.',
+    'Failed to save model metadata': 'Không thể lưu thông tin mô hình',
+    'Model description': 'Mô tả mô hình',
+    'Model icon': 'Biểu tượng mô hình',
+    'No icon': 'Không có biểu tượng',
+    'Only applies to fixed-price models.':
+      'Chỉ áp dụng cho mô hình có giá cố định.',
+    'Optional labels such as official, community, or provider.':
+      'Nhãn tùy chọn như chính thức, cộng đồng hoặc nhà cung cấp.',
+    'Per Second': 'Theo giây',
+    'Per second': 'Theo giây',
+    'Price per second': 'Giá mỗi giây',
+    'Shown on the public model catalog.':
+      'Hiển thị trong danh mục mô hình công khai.',
+    Sources: 'Nguồn',
+    'The fixed price is charged for each request.':
+      'Giá cố định được tính cho mỗi yêu cầu.',
+    'The fixed price is charged for each second.':
+      'Giá cố định được tính cho mỗi giây.',
+    'per second': 'mỗi giây',
+    second: 'giây',
+  },
+}
+
+for (const [locale, translations] of Object.entries(modelCatalogTranslations)) {
+  Object.assign(newKeys[locale], translations)
+}
+
 async function main() {
   let totalApplied = 0
 

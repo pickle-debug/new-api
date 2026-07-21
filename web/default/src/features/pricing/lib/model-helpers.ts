@@ -107,3 +107,8 @@ export function replaceModelInPath(path: string, modelName: string): string {
 export function isTokenBasedModel(model: PricingModel): boolean {
   return model.quota_type === QUOTA_TYPE_VALUES.TOKEN
 }
+
+/** Resolve the unit used to present fixed-price models. */
+export function getFixedPriceUnit(model: PricingModel): 'request' | 'second' {
+  return model.price_unit === 'second' ? 'second' : 'request'
+}

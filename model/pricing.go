@@ -19,6 +19,7 @@ type Pricing struct {
 	ModelName              string                  `json:"model_name"`
 	Description            string                  `json:"description,omitempty"`
 	Icon                   string                  `json:"icon,omitempty"`
+	PriceUnit              string                  `json:"price_unit,omitempty"`
 	Tags                   string                  `json:"tags,omitempty"`
 	VendorID               int                     `json:"vendor_id,omitempty"`
 	QuotaType              int                     `json:"quota_type"`
@@ -358,6 +359,7 @@ func updatePricing() {
 	for model, groups := range modelGroupsMap {
 		pricing := Pricing{
 			ModelName:              model,
+			PriceUnit:              PriceUnitRequest,
 			EnableGroup:            groups.Items(),
 			SupportedEndpointTypes: modelSupportEndpointTypes[model],
 		}
@@ -370,6 +372,9 @@ func updatePricing() {
 			}
 			pricing.Description = meta.Description
 			pricing.Icon = meta.Icon
+			if meta.PriceUnit == PriceUnitSecond {
+				pricing.PriceUnit = PriceUnitSecond
+			}
 			pricing.Tags = meta.Tags
 			pricing.VendorID = meta.VendorID
 		}

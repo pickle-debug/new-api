@@ -32,6 +32,7 @@ export type PricingModel = {
   model_name: string
   description?: string
   icon?: string
+  price_unit?: 'request' | 'second'
   vendor_id?: number
   vendor_name?: string
   vendor_icon?: string

@@ -67,7 +67,11 @@ import {
   isDynamicPricingModel,
 } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
-import { getAvailableGroups, isTokenBasedModel } from '../lib/model-helpers'
+import {
+  getAvailableGroups,
+  getFixedPriceUnit,
+  isTokenBasedModel,
+} from '../lib/model-helpers'
 import { formatFixedPrice, formatGroupPrice } from '../lib/price'
 import type {
   ModelCapability,
@@ -575,6 +579,7 @@ function PriceSection(props: {
 }) {
   const { t } = useTranslation()
   const isTokenBased = isTokenBasedModel(props.model)
+  const fixedPriceUnit = getFixedPriceUnit(props.model)
   const tokenUnitLabel = props.tokenUnit === 'K' ? '1K' : '1M'
   const baseGroupKey = '_base'
   const baseGroupRatioMap = { [baseGroupKey]: 1 }
@@ -708,7 +713,7 @@ function PriceSection(props: {
         <SectionTitle>{t('Base Price')}</SectionTitle>
         <div className='flex items-baseline justify-between'>
           <span className='text-muted-foreground text-sm'>
-            {t('Per request')}
+            {fixedPriceUnit === 'second' ? t('Per second') : t('Per request')}
           </span>
           <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
             {formatFixedPrice(
@@ -868,6 +873,7 @@ function GroupPricingSection(props: {
   )
 
   const isTokenBased = isTokenBasedModel(props.model)
+  const fixedPriceUnit = getFixedPriceUnit(props.model)
   const tokenUnitLabel = props.tokenUnit === 'K' ? '1K' : '1M'
 
   const extraPriceTypes = useMemo(() => {
@@ -1094,7 +1100,10 @@ function GroupPricingSection(props: {
             : [
                 {
                   id: 'price',
-                  header: t('Price'),
+                  header:
+                    fixedPriceUnit === 'second'
+                      ? t('Price per second')
+                      : t('Price'),
                   className: `${thClass} text-right`,
                   cellClassName: 'py-2.5 text-right font-mono',
                   cell: renderFixedGroupPrice,

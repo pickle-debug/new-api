@@ -16,6 +16,35 @@ const (
 	NameRuleSuffix
 )
 
+const (
+	PriceUnitRequest = "request"
+	PriceUnitSecond  = "second"
+)
+
+func normalizePriceUnit(unit string) string {
+	if unit == PriceUnitSecond {
+		return PriceUnitSecond
+	}
+	return PriceUnitRequest
+}
+
+func normalizeModelTags(tags string) string {
+	seen := make(map[string]struct{})
+	normalized := make([]string, 0)
+	for _, tag := range strings.Split(tags, ",") {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		if _, exists := seen[tag]; exists {
+			continue
+		}
+		seen[tag] = struct{}{}
+		normalized = append(normalized, tag)
+	}
+	return strings.Join(normalized, ",")
+}
+
 type BoundChannel struct {
 	Name string `json:"name"`
 	Type int    `json:"type"`
@@ -26,6 +55,7 @@ type Model struct {
 	ModelName    string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name_delete_at,priority:1"`
 	Description  string         `json:"description,omitempty" gorm:"type:text"`
 	Icon         string         `json:"icon,omitempty" gorm:"type:varchar(128)"`
+	PriceUnit    string         `json:"price_unit,omitempty" gorm:"type:varchar(16)"`
 	Tags         string         `json:"tags,omitempty" gorm:"type:varchar(255)"`
 	VendorID     int            `json:"vendor_id,omitempty" gorm:"index"`
 	Endpoints    string         `json:"endpoints,omitempty" gorm:"type:text"`
@@ -45,6 +75,8 @@ type Model struct {
 }
 
 func (mi *Model) Insert() error {
+	mi.PriceUnit = normalizePriceUnit(mi.PriceUnit)
+	mi.Tags = normalizeModelTags(mi.Tags)
 	now := common.GetTimestamp()
 	mi.CreatedTime = now
 	mi.UpdatedTime = now
@@ -75,10 +107,12 @@ func IsModelNameDuplicated(id int, name string) (bool, error) {
 }
 
 func (mi *Model) Update() error {
+	mi.PriceUnit = normalizePriceUnit(mi.PriceUnit)
+	mi.Tags = normalizeModelTags(mi.Tags)
 	mi.UpdatedTime = common.GetTimestamp()
 	// 使用 Select 强制更新所有字段，包括零值
 	return DB.Model(&Model{}).Where("id = ?", mi.Id).
-		Select("model_name", "description", "icon", "tags", "vendor_id", "endpoints", "status", "sync_official", "name_rule", "updated_time").
+		Select("model_name", "description", "icon", "price_unit", "tags", "vendor_id", "endpoints", "status", "sync_official", "name_rule", "updated_time").
 		Updates(mi).Error
 }
 

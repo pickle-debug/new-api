@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -47,6 +48,10 @@ import {
   useDataTable,
 } from '@/components/data-table'
 import { Button } from '@/components/ui/button'
+import { createModel, getModels, updateModel } from '@/features/models/api'
+import { parseModelTags } from '@/features/models/lib/model-utils'
+import { modelsQueryKeys } from '@/features/models/lib/query-keys'
+import type { Model } from '@/features/models/types'
 import { combineBillingExpr } from '@/features/pricing/lib/billing-expr'
 import { useMediaQuery } from '@/hooks'
 
@@ -100,6 +105,8 @@ export type ModelRatioVisualEditorHandle = {
 }
 
 const STORAGE_KEY = 'model-ratio-column-visibility'
+const MODEL_METADATA_QUERY = { page_size: 1000 } as const
+const EMPTY_METADATA_MODELS: Model[] = []
 
 const ModelRatioVisualEditorComponent = forwardRef<
   ModelRatioVisualEditorHandle,
@@ -136,6 +143,12 @@ const ModelRatioVisualEditorComponent = forwardRef<
   ref
 ) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const modelMetadataQuery = useQuery({
+    queryKey: modelsQueryKeys.list(MODEL_METADATA_QUERY),
+    queryFn: () => getModels(MODEL_METADATA_QUERY),
+    staleTime: 5 * 60 * 1000,
+  })
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
@@ -182,6 +195,24 @@ const ModelRatioVisualEditorComponent = forwardRef<
         audioCompletionRatio: false,
       }
     }
+  )
+
+  const metadataModels =
+    modelMetadataQuery.data?.data?.items ?? EMPTY_METADATA_MODELS
+  const metadataByName = useMemo(
+    () => new Map(metadataModels.map((model) => [model.model_name, model])),
+    [metadataModels]
+  )
+  const iconOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          metadataModels
+            .map((model) => model.icon)
+            .filter((icon): icon is string => Boolean(icon))
+        ),
+      ].sort((a, b) => a.localeCompare(b)),
+    [metadataModels]
   )
 
   useEffect(() => {
@@ -299,6 +330,13 @@ const ModelRatioVisualEditorComponent = forwardRef<
       }
       setEditData({
         name: editableModel.name,
+        description: metadataByName.get(editableModel.name)?.description || '',
+        icon: metadataByName.get(editableModel.name)?.icon || '',
+        sources: parseModelTags(metadataByName.get(editableModel.name)?.tags),
+        priceUnit:
+          metadataByName.get(editableModel.name)?.price_unit === 'second'
+            ? 'second'
+            : 'request',
         price: editableModel.price,
         ratio: editableModel.ratio,
         cacheRatio: editableModel.cacheRatio,
@@ -314,7 +352,7 @@ const ModelRatioVisualEditorComponent = forwardRef<
       setEditorOpen(true)
       if (isMobile) setSheetOpen(true)
     },
-    [isMobile]
+    [isMobile, metadataByName]
   )
 
   const handleAdd = useCallback(() => {
@@ -527,7 +565,7 @@ const ModelRatioVisualEditorComponent = forwardRef<
         value: string | undefined
       ) => {
         if (!value || value === '') return
-        const parsed = parseFloat(value)
+        const parsed = Number.parseFloat(value)
         if (Number.isFinite(parsed)) target[name] = parsed
       }
 
@@ -612,6 +650,65 @@ const ModelRatioVisualEditorComponent = forwardRef<
     ]
   )
 
+  const persistModelMetadata = useCallback(
+    async (data: ModelRatioData) => {
+      const latest = await queryClient.fetchQuery({
+        queryKey: modelsQueryKeys.list(MODEL_METADATA_QUERY),
+        queryFn: () => getModels(MODEL_METADATA_QUERY),
+        staleTime: 0,
+      })
+      const existing = latest.data?.items.find(
+        (model) => model.model_name === data.name
+      )
+      const description = data.description?.trim() || ''
+      const icon = data.icon?.trim() || ''
+      const tags = (data.sources ?? [])
+        .map((source) => source.trim())
+        .filter(Boolean)
+      const priceUnit = data.priceUnit === 'second' ? 'second' : 'request'
+
+      // Avoid creating catalog entries for purely token-based pricing rows.
+      if (
+        !existing &&
+        !description &&
+        !icon &&
+        tags.length === 0 &&
+        priceUnit === 'request'
+      ) {
+        return
+      }
+
+      const response = existing
+        ? await updateModel({
+            ...existing,
+            description,
+            icon,
+            tags: tags.join(','),
+            price_unit: priceUnit,
+          })
+        : await createModel({
+            model_name: data.name,
+            description,
+            icon,
+            tags: tags.join(','),
+            price_unit: priceUnit,
+            status: 1,
+            sync_official: 0,
+            name_rule: 0,
+          })
+
+      if (!response.success) {
+        throw new Error(response.message || t('Failed to save model metadata'))
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: modelsQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['pricing'] }),
+      ])
+    },
+    [queryClient, t]
+  )
+
   const handleBatchCopy = useCallback(async () => {
     if (!editData) {
       toast.error(t('Open a source model first'))
@@ -657,11 +754,21 @@ const ModelRatioVisualEditorComponent = forwardRef<
         const data = await editorPanelRef.current.commitDraft()
         if (!data) return false
         persistPricingData(data)
+        try {
+          await persistModelMetadata(data)
+        } catch (error) {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : t('Failed to save model metadata')
+          )
+          return false
+        }
         setEditData(data)
         return true
       },
     }),
-    [editorOpen, persistPricingData]
+    [editorOpen, persistModelMetadata, persistPricingData, t]
   )
 
   const hasRows = table.getRowModel().rows.length > 0
@@ -777,6 +884,7 @@ const ModelRatioVisualEditorComponent = forwardRef<
             <ModelPricingEditorPanel
               ref={editorPanelRef}
               editData={editData}
+              iconOptions={iconOptions}
               onSave={onSave}
               isSaving={isSaving}
               className='h-full min-h-0'
@@ -817,6 +925,7 @@ const ModelRatioVisualEditorComponent = forwardRef<
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           editData={editData}
+          iconOptions={iconOptions}
           onSave={onSave}
           isSaving={isSaving}
         />
